@@ -12,6 +12,7 @@ import json
 
 def writeData(mongoPortNum, database, fileName, ind):
 #This function grabs all of the data of interest from the dataset and puts it into a pandas Dataframe and stores in HDF file
+    
     client = pymongo.MongoClient('localhost',mongoPortNum) #connection to MongoDB instance
     db = client.get_database(database) #grab database
 
@@ -21,18 +22,18 @@ def writeData(mongoPortNum, database, fileName, ind):
     songsCol = db.get_collection('songsStream')
     tracksCol = db.get_collection('tracksStream')
 
-    #open the hdf file for storage. Performed here (in lieu of in )to make sure fileName is valid
+    #open the hdf file for storage.
     hdf = pd.HDFStore(fileName)
 
+    #define the columns of the h5 file
     cols = ['trackId', 'songId', 'masterOwner','trackOwner', 'artist', 'title', 'views', 'instrument', 'contentTags', 'audioURL', 'processedAudioURL', 'startTime', 'trackDuration', 'trackVolume', 'compressorValue', 'panValue', 'echoValue', 'noiseGateValue', 'reverbValue', 'solo', 'trackVideo', 'fromYouTube', 'isFinished', 'mixedAudio','mixedVideo', 'musicBrainzID', 'newMusicBrainzID', 'publicSongCollectionIndex']
 
-    #list to hold data
     max_i = 418465 #hard coded the total number of public songs to iterate through 
 
-    cursor = songsCol.find({'access' : 1}).skip(ind).batch_size(10)
+    cursor = songsCol.find({'access' : 1}).skip(ind).batch_size(10).limit(80000)
     #grab public song collaborations
 
-    i = 0
+    i = ind
     try:
         for songDoc in cursor:
         #iterate through each song
@@ -49,14 +50,14 @@ def writeData(mongoPortNum, database, fileName, ind):
             #music brainz IDs
 
             contentTags = json.dumps(songDoc.get('channels'))
-            #encode any content tags are JSON strings
+            #encode any content tags as JSON strings
 
-            post = postsCol.find({'objectId' : songId})
+            post = postsCol.find({'objectId' : songId}).limit(1)
             #grab the corresponding post document
 
             videoDocuments = videosCol.find({'songId': songId})
             #find the corresponding video documents. Note: there are multiple videos docs for the same collaboration
-            #as instruments are added and tracks swapped out
+            #as instruments are added and tracks are swapped out
 
             for postDoc in post:
             #iterate through corresponding post document and grab relevant information
@@ -64,7 +65,7 @@ def writeData(mongoPortNum, database, fileName, ind):
                 artist = postDoc.get('mb_artist')
                 views = songDoc.get('numberOfViews')
                 title = postDoc.get('title')
-                masterOwner = postDoc.get('owner')
+                masterOwner = postDoc.get('owner') #masterOwner is owner of individual who starts the collaboration
 
                 publishedTracks = postDoc['participantsInfo']['publishedTracks']
                 trackList = []
@@ -87,9 +88,11 @@ def writeData(mongoPortNum, database, fileName, ind):
                         mixedVideo = videoDocs['mp4MergedVideoUrl']
                         mixedAudio = videoDocs.get('mp3AudioUrl')
                         break
+                        #if the lists are equal grab the mixed video and mixed audio
 
                 if mixedVideo is None:
                     mixedVideo = songDoc.get('mp4MergedVideoUrl')
+                    #if no matches in the video collection then just grab from the songs collection
 
                 collabSettings = postDoc.get('collabSettings')
                 if collabSettings is None:
@@ -97,10 +100,9 @@ def writeData(mongoPortNum, database, fileName, ind):
                 else:
                     isFinished = collabSettings['finished']
                 #set bool for whether collaboration is finished
-                #check for new field - 'completed'
 
                 for track in publishedTracks:
-                #for each track that is published
+                #for each track that is published grab the information from the songs collection
 
                     trackId = track['_id']
                     #grab trackId of published track.
@@ -220,7 +222,7 @@ def writeData(mongoPortNum, database, fileName, ind):
                     ### END AUDIO EFFECTS SETTINGS ###
 
 
-                    trackDocument = tracksCol.find({'_id' : trackId})
+                    trackDocument = tracksCol.find({'_id' : trackId}).limit(1)
                     #grab the corresponding track document
 
                     for trackDoc in trackDocument:        
@@ -259,24 +261,35 @@ def writeData(mongoPortNum, database, fileName, ind):
 
                         trackOwner = trackDoc['owner']
                         #grab the owner of the track
-                        trackDuration = trackDoc.get('durationInSeconds')
-                        instrument = trackDoc.get('instrumentAssignedBySongOwner')
 
-                        data = []
+                        trackDuration = trackDoc.get('durationInSeconds') #track duration
+                        instrument = trackDoc.get('instrumentAssignedBySongOwner') #track instrument
+
+                        data = [] 
+                        #to hold a row of data 
+                        
                         data.append([str(trackId), str(songId), masterOwner, trackOwner, artist, title, views, instrument, contentTags, audioURL, processedAudioURL, startTime, float(trackDuration), float(trackVolume), float(compressorValue), float(panValue), float(echoValue), float(noiseGateValue), float(reverbValue), solo, trackVideo, fromYouTube, isFinished, mixedAudio, mixedVideo, str(musicBrainzID), str(newMusicBrainzID), i])
+                        #store a row of data 
+
                         df = pd.DataFrame(data, columns = cols)
+                        #convert to dataframe
+
                         hdf.append('bandhub', df, format = 'table', min_itemsize = 250, data_columns = True, compression = 'zlib')
                         #append data to file
-            i = i + 1
+            i = i + 1 #increment index counter
     except pymongo.errors.AutoReconnect:
         print('AutoReconnect error')
         hdf.close()
+        #catch reconnect error and close file
     try:
         cursor.next()
+        #check if you can continue to iterate through the cursor
     except StopIteration:
         print('Done')
         hdf.close()
+        #catch raised exception for cursor.next and close file
     hdf.close()
+    #this line of code shouldn't be reached, but included to be safe.
 
 
 #if running the file directly perform the following
@@ -293,6 +306,8 @@ if __name__ == '__main__':
     db = args.databaseName
     outputFN = args.outputFileName
     startIndex = args.startIndex
+    #parse args and store values
 
     writeData(port, db, outputFN, startIndex)
-    #parse args and store values
+    #perform the file creation
+
