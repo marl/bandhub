@@ -79,6 +79,8 @@ def videoInformation(videoDocuments, sortedTracks, songMixedVideo):
 # Grabs all the audio effects settings. Pass in a song document and information is returned.
 # ========================================================================================
     
+    mixedVideo = None
+
     for videoDocs in videoDocuments:
         print('Iterate through the videos')
         toCompare = []
@@ -87,7 +89,6 @@ def videoInformation(videoDocuments, sortedTracks, songMixedVideo):
         sortedToCompare = sorted(toCompare)
         #create list to compare list of published tracks to
 
-        mixedVideo = None
         if (sortedToCompare == sortedTracks):
             mixedVideo = videoDocs['mp4MergedVideoUrl']
             mixedAudio = videoDocs.get('mp3AudioUrl')
@@ -112,6 +113,8 @@ def trackInformation(trackDocument, trackSettings):
     
     processedAudioURL = trackSettings.get('effectsAudioUrl')
     #if there is a processedAudioURL grab it
+
+    audioChannel = trackSettings.get('audioChannels')
 
     #if no effectsAudioUrl, try these two locations. Also check to make sure its not a duplicate of the file in the track stream
     if processedAudioURL is None:
@@ -154,7 +157,7 @@ def createSortedTrackList(publishedTracks):
         try:
             trackList.append(str(track['_id']))
         except KeyError:
-            print(postDoc)
+            print('skipped song')
     sortedTracks = sorted(trackList)
     #print('Created published tracks array to compare tracks in the videos to')
     #grab the array of published tracks for this collaboration and create a list to hold those tracks
@@ -297,7 +300,7 @@ def writeData(songsCol, postsCol, videosCol, tracksCol, fileName, ind):
     trackFields = {'audioChannels':1,'startTimeValue':1,'videoFileUrl':1,'sourceVideoURL':1,'owner':1,'durationInSeconds':1,'instrumentAssignedBySongOwner':1}       
     # fields needed in each collection, used for projecting to improve performance
 
-    cursor = songsCol.find({'access' : 1}, songsFields).skip(ind).batchSize(30).limit(30000)
+    cursor = songsCol.find({'access' : 1}, songsFields).skip(ind).batch_size(30).limit(30000)
     #grab public song collaborations
 
     i = ind
