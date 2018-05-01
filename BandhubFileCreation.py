@@ -55,7 +55,9 @@ def songInformation(songDocument):
 
     views = songDocument.get('numberOfViews')
 
-    return songId, musicBrainzID, newMusicBrainzID, contentTags, songMixedVideo, views
+    allTracks = songDocument.get('trackIDs')
+
+    return songId, musicBrainzID, newMusicBrainzID, contentTags, songMixedVideo, views, allTracks
 # ========================================================================================
 
 
@@ -119,50 +121,77 @@ def videoInformation(videoDocuments, sortedTracks, songMixedVideo):
 
 
 
-def trackInformation(trackDocument, trackSettings):
+def trackInformation(trackDocument, trackSettings, isPublished):
 # Grabs all the track information.
 # Pass in a track document and the tracks settings (from the songs collection) and information is returned.
 #   Track settings from the songs collection are used to cross reference the audio URLs
 # ========================================================================================
     
-    audioURL = trackDocument['audioChannels'][0]['fileUrl']
+    audioURL = trackDocument['audioChannels'][0].get('fileUrl')
+    if audioURL is None:
+        audioURL = trackDocument.get('audioFileUrl')
+        if isPublished:
+            print('published track but no audio URL in the expected location')
+            print(trackDocument['_id'])
     startTime = trackDocument['startTimeValue']
     #grab unprocessed audio and its start time
     
-    processedAudioURL = trackSettings.get('effectsAudioUrl')
+    cleanProcessedAudioURL = trackSettings.get('effectsAudioUrl')
+    processedAudioURL = None
     #if there is a processedAudioURL grab it
 
     audioChannel = trackSettings.get('audioChannels')
 
     #if no effectsAudioUrl, try these two locations. Also check to make sure its not a duplicate of the file in the track stream
-    if processedAudioURL is None:
+    if cleanProcessedAudioURL is None:
         if audioChannel is not None:
             dummyURL = audioChannel[0].get('audioFileUrl')
             if dummyURL != audioURL:
                 processedAudioURL = dummyURL
-    if processedAudioURL is None:
+    if cleanProcessedAudioURL is None:
         dummyURL = trackSettings.get('audioFileUrl')
         if dummyURL != audioURL:
             processedAudioURL = dummyURL                
 
     trackVideo = trackDocument.get('videoFileUrl')
-    if trackVideo is None:
-        trackVideo = trackDocument.get('sourceVideoURL')
-        if trackVideo is not None:
-            fromYouTube = True
-        else:
-            fromYouTube = False
+    trackVideo2 = trackDocument.get('sourceVideoURL')
+
+    if (trackVideo is None) and (trackVideo2 is not None):
+        trackVideo = trackVideo2
+
+    if trackVideo2 is not None:
+        fromYouTube = True
     else:
-        fromYouTube = False 
+        fromYouTube = False
+
+        #if trackVideo is not None:
+        #    fromYouTube = True
+        #else:
+        #    fromYouTube = False
+    #else:
+        #fromYouTube = False 
     #grab video files. Set fromYouTube bool
 
     trackOwner = trackDocument['owner']
     #grab the owner of the track
 
+    audioSampleRate = trackDocument['audioChannels'][0].get('audioSampleRate')
+    if audioSampleRate is None:
+        audioSampleRate = 0
+    #get sample rate
+
     trackDuration = trackDocument.get('durationInSeconds') #track duration
+    
+    if trackDuration is None:
+        totalFrames = trackDocument['audioChannels'][0].get('audioTotalFrames')
+        if totalFrames is not None and audioSampleRate is not 0:
+            trackDuration = totalFrames/audioSampleRate
+    # if not track duration field them compute the track duration
+
+
     instrument = trackDocument.get('instrumentAssignedBySongOwner') #track instrument
 
-    return audioURL, processedAudioURL, trackVideo, startTime, trackOwner, trackDuration, instrument, fromYouTube
+    return audioURL, cleanProcessedAudioURL, processedAudioURL, trackVideo, startTime, trackOwner, trackDuration, audioSampleRate, instrument, fromYouTube
 # ========================================================================================
 
 
@@ -173,19 +202,19 @@ def createSortedTrackList(publishedTracks):
 # The sorted list is used in the function videoInformation.
 # ========================================================================================
     
-    trackList = []
+    publishedTrackList = []
     for track in publishedTracks:
         try:
-            trackList.append(str(track['_id']))
+            publishedTrackList.append(str(track['_id']))
         except KeyError:
             print('skipped song')
-    sortedTracks = sorted(trackList)
+    sortedTrackList = sorted(publishedTrackList)
     #print('Created published tracks array to compare tracks in the videos to')
     #grab the array of published tracks for this collaboration and create a list to hold those tracks
     #the track list will be used to compare against trackIds in the video document to determine which
     #video document holds the final mix.
 
-    return sortedTracks
+    return sortedTrackList, publishedTrackList
 # ========================================================================================
 
 
@@ -317,17 +346,19 @@ def writeData(songsCol, postsCol, videosCol, tracksCol, fileName, ind, documentL
     print('HdF opened')
 
     #define the columns of the h5 file
-    cols = ['trackId', 'songId', 'masterOwner','trackOwner', 'artist', 'title', 'views', 'instrument', 'contentTags', 'audioURL', 'processedAudioURL', 'startTime', 'trackDuration', 'trackVolume', 'compressorValue', 'panValue', 'echoValue', 'noiseGateValue', 'reverbValue', 'solo', 'trackVideo', 'fromYouTube', 'isFinished', 'mixedAudio','mixedVideo', 'musicBrainzID', 'newMusicBrainzID', 'publicSongCollectionIndex']
+    cols = ['trackId', 'songId', 'masterOwner','trackOwner', 'artist', 'title', 'views', 'instrument', 'contentTags', 'audioURL', 'cleanProcessedAudioURL', 'processedAudioURL', 'startTime', 'trackDuration', 'audioSampleRate', 'trackVolume', 'compressorValue', 'panValue', 'echoValue', 'noiseGateValue', 'reverbValue', 'solo', 'trackVideo', 'fromYouTube', 'isFinished', 'isPublished', 'hasPublishedTracks', 'mixedAudio','mixedVideo', 'musicBrainzID', 'newMusicBrainzID', 'publicSongCollectionIndex']
 
-    max_i = 418465 #hard coded the total number of public songs to iterate through 
+    max_i = 418465 #hard coded the total number of public songs to be looked through (only used for print statement) 
 
-    songsFields = {'musicbrainzMetadataId':1,'newMusicbrainzMetadataId':1, 'channels':1,'mp4MergedVideoUrl':1,'numberOfViews':1, 'settings':1}
+    songsFields = {'musicbrainzMetadataId':1,'newMusicbrainzMetadataId':1, 'channels':1,'mp4MergedVideoUrl':1,'numberOfViews':1, 'settings':1, 'trackIDs':1, 'hasPublishedTracks':1}
     postsFields = {'mb_artist':1,'title':1,'owner':1,'participantsInfo':1,'collabSettings':1}
     videoFields = {'mp4MergedVideoUrl':1, 'mp3AudioUrl':1, 'trackIds':1}
-    trackFields = {'audioChannels':1,'startTimeValue':1,'videoFileUrl':1,'sourceVideoURL':1,'owner':1,'durationInSeconds':1,'instrumentAssignedBySongOwner':1}       
+    trackFields = {'audioChannels':1, 'audioFileUrl':1, 'startTimeValue':1,'videoFileUrl':1,'sourceVideoURL':1,'owner':1,'durationInSeconds':1,'instrumentAssignedBySongOwner':1}       
     # fields needed in each collection, used for projecting to improve performance
+    # 2) add isPublished field
+    # 3) add whether song collab has published tracks
 
-    cursor = songsCol.find({'access' : 1}, songsFields).skip(ind).batch_size(30).limit(documentLimit)
+    cursor = songsCol.find({'access' : 1}, songsFields).skip(ind).batch_size(15).limit(documentLimit)
     #grab public song collaborations. Skip how many indices we want, limit files grabbed at one time to 30.
     #Limit the number of files to be looked through to 30,000
 
@@ -341,8 +372,15 @@ def writeData(songsCol, postsCol, videosCol, tracksCol, fileName, ind, documentL
                 print('Creating File: %f%%' % percent)
             #print percentage of total documents iterated through
 
-            songId, musicBrainzID, newMusicBrainzID, contentTags, songMixedVideo, views = songInformation(songDoc)
+            songId, musicBrainzID, newMusicBrainzID, contentTags, songMixedVideo, views, allTracks = songInformation(songDoc)
             #grab information from song document
+
+            if not allTracks:
+                print('No tracks in trackIDs field of song document')
+                print(songId)
+                i = i+1
+                continue
+            #if no trackIDs for a song then immediately move to next song. Index needed to move correctly
 
             post = postsCol.find({'objectId' : songId}, postsFields).limit(1)
             #grab the corresponding post document
@@ -352,36 +390,77 @@ def writeData(songsCol, postsCol, videosCol, tracksCol, fileName, ind, documentL
             #iterate through corresponding post document and grab relevant information
                 
                 artist, title, masterOwner, publishedTracks, isFinished = postInformation(postDoc)
-                #grab and store post document information
-
-                sortedTracks = createSortedTrackList(publishedTracks)
-                #grab the sorted track list
-
-                if not sortedTracks:
-                    #print('No sorted Tracks')
-                    break
-                    #if sorted track list is empty, ie: no track id strings, then break and move to next song
-
-                videoDocuments = videosCol.find({'songId': songId}, videoFields)
-                #print('video documents grabbed')
-
+                #grab and store post document information        
+                
                 #find the corresponding video documents. Note: there are multiple videos docs for the same collaboration
                 #as instruments are added and tracks are swapped out
 
-                mixedVideo, mixedAudio = videoInformation(videoDocuments, sortedTracks, songMixedVideo)
+                if not publishedTracks:
+                    print('No published tracks')
+                    #print(i)
+                    print(postDoc['_id'])
+                    print(songId)
+                    hasPublishedTracks = False
+                    mixedVideo = None
+                    mixedAudio = None
+                    #publishedTracks = songTracks
+                    #break
+                    #if sorted track list is empty, ie: no track id strings, then break and move to next song
+                else:
+                    hasPublishedTracks = True
+                    videoDocuments = videosCol.find({'songId': songId}, videoFields)
+                    #print('video documents grabbed')
+                    sortedTrackList, publishedTrackList = createSortedTrackList(publishedTracks)
+                    mixedVideo, mixedAudio = videoInformation(videoDocuments, sortedTrackList, songMixedVideo)
+                    #create a sorted list of published tracks if there are tracks that are published
+
+
+                crossHasPublishedTracks = songDoc.get('hasPublishedTracks')
+                if crossHasPublishedTracks is not None:
+                    if not (hasPublishedTracks == crossHasPublishedTracks):
+                        print('hasPublishedTracks does not match crossHasPublishedTracks')
+                        print(songId)
+                #error check if the field hasPublishedTracks in the songs document matches what the post document reports
+
+
+                #if not sortedTracks:
+                #    print('No sorted tracks')
+                #    print('error found')
+                #    break
+                # shouldn't need this error check if I'm checking for published tracks, TBD
+
                 #grab the correct mixed video and audio
+                #this needs to be fixed to handle when there are no sorted tracks. Could just move this above
+                #but I need to check if its always the case that no video document exists if tracks arent published
 
                 #print('For each published track')
-                for track in publishedTracks:
-                #for each track that is published grab the information from the songs collection
+                for track in allTracks:
+                #for all tracks grab the information from the songs collection
 
-                    trackId = track['_id']
+                    #trackId = track['_id']
+                    trackId = track
+                    #this is new
+
+                    isPublished = False
+                    if hasPublishedTracks is True:
+                        for pubTrackId in publishedTrackList:
+                            if str(trackId) == pubTrackId:
+                                isPublished = True
+                                #print('Published Track Match')
+                                break
+                    # check to see if published
+
                     trackSettings = songDoc['settings'].get(str(trackId))
                     #grab trackId and settings of published track.
+                    #everything else from here should be the same. 
 
                     if trackSettings is None:
+                        if isPublished:
+                            print('Track settings not found for publishedTrack')
+                            print(songId)
+                            print(trackId)
                         continue
-                        #if no track settings move to next track
+                    #if no track settings move to next track
 
                     #grab all the audio effects for a track from the songs collection
                     trackVolume, mute, compressorValue, echoValue, noiseGateValue, panValue, reverbValue, solo = grabAudioEffectsSettings(trackSettings)
@@ -393,16 +472,21 @@ def writeData(songsCol, postsCol, videosCol, tracksCol, fileName, ind, documentL
                     #print('Looking through track document')
                     for trackDoc in trackDocument:        
                     #look through corresponding track document    
-
-                        audioURL, processedAudioURL, trackVideo, startTime, trackOwner, trackDuration, instrument, fromYouTube = trackInformation(trackDoc, trackSettings)
-
+                        if trackDoc['audioChannels']:
+                            audioURL, cleanProcessedAudioURL, processedAudioURL, trackVideo, startTime, trackOwner, trackDuration, audioSampleRate, instrument, fromYouTube = trackInformation(trackDoc, trackSettings, isPublished)
+                        else:
+                            if isPublished:
+                                print('track is published but no audioChannels in track doc')
+                                print(songId)
+                                print(trackId)
+                            continue
                         #print('Ready to create row of data')
                         data = []  #to hold a row of data 
-                        data.append([str(trackId), str(songId), masterOwner, trackOwner, artist, title, views, instrument, contentTags, audioURL, processedAudioURL, startTime, float(trackDuration), float(trackVolume), float(compressorValue), float(panValue), float(echoValue), float(noiseGateValue), float(reverbValue), solo, trackVideo, fromYouTube, isFinished, mixedAudio, mixedVideo, str(musicBrainzID), str(newMusicBrainzID), i])
+                        data.append([str(trackId), str(songId), masterOwner, trackOwner, artist, title, views, instrument, contentTags, audioURL, cleanProcessedAudioURL, processedAudioURL, startTime, float(trackDuration), int(audioSampleRate), float(trackVolume), float(compressorValue), float(panValue), float(echoValue), float(noiseGateValue), float(reverbValue), solo, trackVideo, fromYouTube, isFinished, isPublished, hasPublishedTracks, mixedAudio, mixedVideo, str(musicBrainzID), str(newMusicBrainzID), i])
                         df = pd.DataFrame(data, columns = cols) 
                         #store a row of data and convert to dataframe
 
-                        hdf.append('bandhub', df, format = 'table', min_itemsize = 250, data_columns = True, compression = 'zlib')
+                        hdf.append('bandhub', df, format = 'table', min_itemsize = 500, data_columns = True, compression = 'zlib')
                         print('Data row appended')
                         #append data to file
 

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#SBATCH --job-name=CreateDataset
+#SBATCH --job-name=DL
 #SBATCH --nodes=1
 #SBATCH --cpus-per-task=2
 #SBATCH --mem=20GB
@@ -18,10 +18,8 @@ mkdir -p $RUNDIR
 
 
 source activate bandhub
-module load mongodb/3.4.10
-mongod --dbpath /scratch/gjr286/mongodb --fork --logpath mongo.log --port 27017
 
 cd $RUNDIR
 
-chmod +x $SRCDIR/BandhubFileCreation.py
-python3 $SRCDIR/BandhubFileCreation.py 27017 'b=bandhub' 'bandhub.h5' 0 30000
+chmod +x $SRCDIR/BandhubDownload.py
+python3 $SRCDIR/BandhubDownload.py '/home/gjr286/BandhubDatasetTemp.h5' '/scratch/gjr286/TestDownload' 'Tracks' 0 10 True
