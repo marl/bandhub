@@ -19,6 +19,16 @@ import soundfile as sf
 
 
 # ========================================================================================
+def make_dir(directory):
+    try:
+        os.mkdir(directory)
+    except OSError as exc:
+        if exc.errno != errno.EEXIST:
+            raise
+    pass
+    # try to make new directory, if user has not created it already
+
+# ========================================================================================
 def temp_write_url(url, tempPath):
     baseFilename = url.rpartition('/')[2] #partition the URL into unique filename
     tempOutputFN = tempPath + '/' + baseFilename #construct an output filename
@@ -67,14 +77,10 @@ def download(HDFName, outputPathUnprocessed,outputPathProcessed, tempPath, start
     groupedData = data.groupby("songId")
     #dataColumn = pd.unique(dataClean[columnName]) #grab only the column of interest
 
-    try:
-        os.mkdir(outputPathUnprocessed)
-        os.mkdir(outputPathProcessed)
-        os.mkdir(tempPath)
-    except OSError as exc:
-        if exc.errno != errno.EEXIST:
-            raise
-    pass
+
+    make_dir(outputPathUnprocessed)
+    make_dir(outputPathProcessed)
+    make_dir(tempPath)
     # try to make new directory, if user has not created it already
 
     rowCounter = startIndex;
@@ -108,7 +114,7 @@ def download(HDFName, outputPathUnprocessed,outputPathProcessed, tempPath, start
                 currProcessedTracksFNs.append(baseFilename)
 
                 if currLength > maxLength:
-                    maxLenth = currLength
+                    maxLength = currLength
                 #elif currLength != maxLength:
                     #print("Processed Audio Length is not same",url)
 
