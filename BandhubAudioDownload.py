@@ -109,7 +109,7 @@ def download(HDFName, outputPathUnprocessed,outputPathProcessed, tempPath, start
 
                 if currLength > maxLength:
                     maxLenth = currLength
-                elif currLength != maxLength:
+                #elif currLength != maxLength:
                     #print("Processed Audio Length is not same",url)
 
         # write out the files
