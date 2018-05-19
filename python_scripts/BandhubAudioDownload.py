@@ -14,6 +14,7 @@ import os
 import urllib
 import requests
 import soundfile as sf 
+import errno
 # IMPORTS
 # ========================================================================================
 
@@ -89,39 +90,49 @@ def download(HDFName, outputPathUnprocessed,outputPathProcessed, tempPath, start
         currProcessedTracks = group.cleanProcessedAudioURL
         startTimes = group.startTime
 
+        validStartTimes = []
         currRawTracksFNs = []
         currProcessedTracksFNs = []
 
         count = 0;
         maxLength = 0;
         for url in currRawTracks:
-            baseFilename, tempFilename = temp_write_url(url, tempPath)
-            audioData,samplerate = sf.read(tempFilename)
-            currLength = max(audioData.shape) + startTimes.iloc[count]
-            currRawTracksFNs.append(baseFilename)
+            if url[-4:] == '.ogg':
+                baseFilename, tempFilename = temp_write_url(url, tempPath)
+                try:
+                    audioData,samplerate = sf.read(tempFilename)
+                    currLength = max(audioData.shape) + startTimes.iloc[count]
+                    currRawTracksFNs.append(baseFilename)
+                    validStartTimes.append(startTimes.iloc[count])
 
-            if currLength > maxLength:
-                maxLength = currLength
+                    if currLength > maxLength:
+                        maxLength = currLength
 
+                except RuntimeError:
+                    print('Unknown data format (unprocessedAudioURL) in row', rowCounter)
             count+=1
             rowCounter +=1
 
         for url in currProcessedTracks:
             if pd.notnull(url):
-                baseFilename, tempFilename = temp_write_url(url,tempPath)
-                audioData,samplerate = sf.read(tempFilename)
-                currLength = max(audioData.shape)
-                currProcessedTracksFNs.append(baseFilename)
+                if url[-4:] == '.ogg':
+                    baseFilename, tempFilename = temp_write_url(url,tempPath)
+                    try:
+                        audioData,samplerate = sf.read(tempFilename)
+                        currLength = max(audioData.shape)
+                        currProcessedTracksFNs.append(baseFilename)
 
-                if currLength > maxLength:
-                    maxLength = currLength
+                        if currLength > maxLength:
+                            maxLength = currLength
+                    except RuntimeError:
+                        print('Unknown data format (processedAudioURL) in row', rowCounter-1)
                 #elif currLength != maxLength:
                     #print("Processed Audio Length is not same",url)
 
         # write out the files
         count = 0;
         for fn in currRawTracksFNs:
-            write_file(fn, tempPath, outputPathUnprocessed, maxLength, startTimes.iloc[count])
+            write_file(fn, tempPath, outputPathUnprocessed, maxLength, validStartTimes[count])
             count +=1
 
         if currProcessedTracksFNs:
@@ -129,8 +140,8 @@ def download(HDFName, outputPathUnprocessed,outputPathProcessed, tempPath, start
                 write_file(fn, tempPath, outputPathProcessed, maxLength, 0)
 
         print(rowCounter)
-        if rowCounter > rowLimit:
-            print("Final Row Processed", rowCounter )
+        if rowCounter > rowLimit+startIndex:
+            print("Final Row Processed", rowCounter - 1)
             break
 
 # MAIN FUNCTION
