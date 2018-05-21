@@ -138,7 +138,8 @@ def grab_audio_effects_settings(trackSettings):
         eqState1 = audioChannel[0].get('visualEQState')
         eqValue1 = audioChannel[0].get('visualEQValues')
         if (eqState1 ==0) or (eqValue1 is None):
-            eqValue1 = -1000
+            eqValue1 = []
+            eqValue1.append(-1000)
     else:
         volume1 = -1
         solo1 = False
@@ -148,7 +149,8 @@ def grab_audio_effects_settings(trackSettings):
         noiseGateValue1 = -1000
         panValue1 = -1000
         reverbValue1 = -1000
-        eqValue1 = -1000
+        eqValue1 = []
+        eqValue1.append(-1000)
     
     volume2 = trackSettings.get('volume')
     mute2 = trackSettings.get('mute')
@@ -190,13 +192,16 @@ def grab_audio_effects_settings(trackSettings):
     eqState2 = trackSettings.get('visualEQState')
     eqValue2 = trackSettings.get('visualEQValues')
     if (eqState2 ==0) or (eqValue2 is None):
-        eqValue2 = -1000
+        eqValue2 = []
+        eqValue2.append(-1000)
          
     if eqValue1 is not None:
-        eqValue1 = np.around(eqValue1,3).tolist()
+        eqValue1 = [ round(elem,2) if elem is not None else elem for elem in eqValue1]
+        #eqValue1 = np.around(np.array(eqValue1),3).tolist()
         eqValue1 = json.dumps(eqValue1)
     if eqValue2 is not None:
-        eqValue2 = np.around(eqValue2,3).tolist()
+        eqValue2 = [round(elem,2) if elem is not None else elem for elem in eqValue2]
+        #eqValue2 = np.around(np.array(eqValue2),3).tolist()
         eqValue2 = json.dumps(eqValue2)
     
     return (volume1, volume2, mute1, mute2, solo1, solo2, compressorValue1, compressorValue2,
@@ -273,10 +278,9 @@ def write_data(hdfName, songsCol, fileName, startIdx, documentLimit):
             for doc in songDoc:
                 songSettings = doc.get('settings')
                 subTitle = doc.get('subTitle')
-                if len(subTitle) > 790:
-                    print('subtitle above length 800')
-                    subTitle = subTitle[0:790]
-
+                if len(subTitle) > 700:
+                    print('subtitle above length 700')
+                    subTitle = subTitle[0:700]
                 
                 trackCount = 0
                 for track in trackIds:
@@ -313,16 +317,17 @@ def write_data(hdfName, songsCol, fileName, startIdx, documentLimit):
                     float(noiseGateValue1), float(noiseGateValue2), float(reverbValue1),
                     float(reverbValue2), eqValue1, eqValue2])
                     
-                    df = pd.DataFrame(data, columns = cols) 
-                    #store a row of data and convert to dataframe
-
-                    hdf.append('bandhub', df, format = 'table', min_itemsize = 800, data_columns = True, compression = 'zlib')
-                    print('Data row appended', rowCount)
-                    #append data to file
-                    
                     trackCount += 1
                     rowCount += 1
-    
+
+                    
+                df = pd.DataFrame(data, columns = cols) 
+                #store a row of data and convert to dataframe
+
+                hdf.append('bandhub', df, format = 'table', min_itemsize = 800, data_columns = True, compression = 'zlib')
+                print('Data rows appended', rowCount-1)
+                #append data to file    
+                
         except pymongo.errors.AutoReconnect:
             print('AutoReconnect error')
             hdf.close()
