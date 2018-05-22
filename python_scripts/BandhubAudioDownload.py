@@ -15,6 +15,7 @@ import urllib
 import requests
 import soundfile as sf 
 import errno
+import sys
 # IMPORTS
 # ========================================================================================
 
@@ -33,11 +34,14 @@ def make_dir(directory):
 def temp_write_url(url, tempPath):
     baseFilename = url.rpartition('/')[2] #partition the URL into unique filename
     tempOutputFN = tempPath + '/' + baseFilename #construct an output filename
-
-    r = requests.get(url)
-    with open(tempOutputFN, 'wb') as fd:
-        for chunk in r.iter_content(chunk_size=128):
-            fd.write(chunk)
+    try:
+        r = requests.get(url)
+        with open(tempOutputFN, 'wb') as fd:
+            for chunk in r.iter_content(chunk_size=128):
+                fd.write(chunk)
+    except requests.exceptions.RequestException as e:
+        print(e)
+        
     return baseFilename, tempOutputFN
 
 # ========================================================================================
@@ -73,11 +77,10 @@ def download(HDFName, outputPathUnprocessed,outputPathProcessed, tempPath, start
         data = data.loc[data.isPublished == True] #grab published tracks
 
     data = data[["songId","trackId","audioURL","cleanProcessedAudioURL","startTime","trackDuration"]]
-    data = data.iloc[startIndex:]
+    data = data.iloc[startIndex:startIndex+rowLimit+100]
 
     groupedData = data.groupby("songId")
     #dataColumn = pd.unique(dataClean[columnName]) #grab only the column of interest
-
 
     make_dir(outputPathUnprocessed)
     make_dir(outputPathProcessed)
@@ -140,6 +143,7 @@ def download(HDFName, outputPathUnprocessed,outputPathProcessed, tempPath, start
                 write_file(fn, tempPath, outputPathProcessed, maxLength, 0)
 
         print(rowCounter)
+        sys.stdout.flush()
         if rowCounter > rowLimit+startIndex:
             print("Final Row Processed", rowCounter - 1)
             break

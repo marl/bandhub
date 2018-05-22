@@ -11,6 +11,7 @@ from bson.objectid import ObjectId
 import os
 import json
 import time
+import sys
 # IMPORTS
 # ========================================================================================
 
@@ -27,9 +28,12 @@ def check_for_null(string_data):
 # Checks if the old data is null using pd.null and sets the string to None for dtype matching
 # ========================================================================================
     if pd.isnull(string_data):
-        string_data = None
-    
+        string_data = None    
     return string_data
+
+def unicode_truncate(s, length, encoding = 'utf-8'):
+    encoded = s.encode(encoding)[:length]
+    return encoded.decode(encoding, 'ignore')
 
 def fill_blank_settings():
 # Fill default/null settings for HDF store if no track settings are available.
@@ -270,6 +274,8 @@ def write_data(hdfName, songsCol, fileName, startIdx, documentLimit):
     # Fields needed in the song collection, used for projecting to improve performance
     
     rowCount = startIdx
+    frameCount = 0;
+    #df = pd.DataFrame(columns = cols) #empty dataframe object
     for name,group in groupedData:
         songId = pd.unique(group.songId)[0]
         try:
@@ -278,9 +284,10 @@ def write_data(hdfName, songsCol, fileName, startIdx, documentLimit):
             for doc in songDoc:
                 songSettings = doc.get('settings')
                 subTitle = doc.get('subTitle')
-                if len(subTitle) > 700:
-                    print('subtitle above length 700')
-                    subTitle = subTitle[0:700]
+                if len(subTitle.encode('utf-8')) > 800:
+                    print('subtitle above length 800')
+                    subTitle = unicode_truncate(subTitle, 800)
+                    #print(len(subTitle.encode('utf-8')))
                 
                 trackCount = 0
                 for track in trackIds:
@@ -307,7 +314,7 @@ def write_data(hdfName, songsCol, fileName, startIdx, documentLimit):
                     data = []  #to hold a row of data 
                     
                     data.append([str(trackId), str(songId), masterOwner, trackOwner, 
-                    artist, title, subTitle, views, instrument, contentTags, audioURL, 
+                    artist, title, subTitle, int(views), instrument, contentTags, audioURL, 
                     processedAudioURL, trackVideo, startTime, float(trackDuration), 
                     int(audioSampleRate),fromYouTube, isFinished, isPublished, hasPublishedTracks, 
                     mixedAudio, mixedVideo, str(musicBrainzID), str(newMusicBrainzID), 
@@ -317,16 +324,26 @@ def write_data(hdfName, songsCol, fileName, startIdx, documentLimit):
                     float(noiseGateValue1), float(noiseGateValue2), float(reverbValue1),
                     float(reverbValue2), eqValue1, eqValue2])
                     
+                    if frameCount == 0:
+                        df = pd.DataFrame(data, columns = cols) 
+                    else:
+                        currDf = pd.DataFrame(data,columns = cols)
+                        df = df.append(currDf, ignore_index=True)
+                    #store a row of data and convert to dataframe
+                    
+                    frameCount += 1
+                    
+                    if (frameCount > 199):
+                        df.index = pd.Series(df.index) + (rowCount - 99)
+                        hdf.append('bandhub', df, format = 'table', min_itemsize = 800, data_columns = True, compression = 'zlib')
+                        df = pd.DataFrame(columns = cols)
+                        frameCount = 0;
+                        print('Data rows appended', rowCount)
+                        sys.stdout.flush()
+                        #append data to file  
+                      
                     trackCount += 1
                     rowCount += 1
-
-                    
-                df = pd.DataFrame(data, columns = cols) 
-                #store a row of data and convert to dataframe
-
-                hdf.append('bandhub', df, format = 'table', min_itemsize = 800, data_columns = True, compression = 'zlib')
-                print('Data rows appended', rowCount-1)
-                #append data to file    
                 
         except pymongo.errors.AutoReconnect:
             print('AutoReconnect error')
@@ -334,6 +351,7 @@ def write_data(hdfName, songsCol, fileName, startIdx, documentLimit):
             #catch reconnect error and close file
 
     hdf.close()
+    print('Appending Complete, HDF file closed')
     #this line of code shouldn't be reached, but included to be safe.
 
 
