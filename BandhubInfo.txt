@@ -1,0 +1,95 @@
+Written by Gregory Reardon
+This .txt file contains the documentation for python scripts, batch scripts,  HDF file fields, and miscellaneous observations with respect to the Bandhub dataset.
+
+For more information or clarification with respect to any of the below content, please contact Gregory Reardon at the following email:
+
+gregory.reardon9@gmail.com 
+
+Bandhub Documentation:
+
+1. HDF File creation
+	python script: BandhubFileCreation.py
+	batch script: BandhubBatch.sh
+		batch script arguments:
+	description:
+	misc:
+
+2. HDF Effects Append
+	python script: BandhubAppend.py
+	batch script: AppendBatch.sh
+		batch script arguments: 
+	description:
+	misc:
+
+3. Audio Download
+	python script: BandhubAudioDownload.py
+	batch script: DownloadAudioBatch.sh
+		batch script arguments:
+	description:
+	misc:
+
+4. Video Download
+	python script: BandhubVideoDownload.py
+	batch script: DownloadVideoBatch.sh
+		batch script arguments:
+	description:
+	misc:
+
+Not Completed:
+	1. Convert HDF from Pandas to H5py
+	2. Validate the downloaded audio and append information to the HDF file
+		a. Also handle the 48000 SR material and correct some zero padding if necessary.
+		b. Fields to add - audioSampleRate, unprocessedAudioFilename, processedAudioFilename, songDuration 
+	2. YouTube video downloads
+	3. Mixed Audio?
+
+HDF File Fields:
+	The most updated version of the HDF file is located in the /scratch/work/marl/bandhub folder and its titled BandhubDataset.h5. The dataset within the HDF file is entitled "bandhub".
+	The dataset contains the following fields:
+	1. trackId - str
+		Unique trackId which can be used to locate a track in the tracksStream of the Bandhub database
+	2. songId - str
+		Uniquely identifies a collaboration or "mix" which might include a single track of a collection of tracks
+	3. masterOwner - str
+	4. trackOwner
+	5. Artist
+	6. Title
+	7. subTitle
+	8. Views
+	9. Instrument
+	10. contentTags
+	11. audioURL
+	12. processedAudioURL
+	13. trackVideoURL
+	14. startTime
+	15. trackDuration
+	16. audioSampleRate
+	17. fromYouTube
+	18. isFinished
+	19. isPublished
+	20. hasPublishedTracks
+	21. mixedAudioURL
+	22. mixedVideoURL
+	23. musicBrainzID
+	24. newMusicBrainzID
+	25. publicSongCollectionIndex
+	26. volume1
+	27. volume2
+	28. mute1
+	29. mute2
+	30. solo1
+	31. solo2
+	32. compressorValue1
+	33. compressorValue2
+	34. panValue1
+	35. panValue2
+	36. echoValue1
+	37. echoValue2
+	38. noiseGateValue1
+	39. noiseGateValue2
+	40. reverbValue1
+	41. reverbValue2
+	42. eqValue1
+	43. eqValue2
+	
+
