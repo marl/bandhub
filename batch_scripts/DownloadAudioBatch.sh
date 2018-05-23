@@ -22,4 +22,4 @@ source activate bandhub
 cd $RUNDIR
 
 chmod +x $SRCDIR/BandhubAudioDownload.py
-python3 $SRCDIR/BandhubAudioDownload.py '/home/gjr286/BandhubDatasetTemp.h5' '/scratch/gjr286/TestUnprocessed' '/scratch/gjr286/TestProcessed' '/scratch/gjr286/tempFiles' 0 100 True
+python3 $SRCDIR/BandhubAudioDownload.py '/scratch/work/marl/bandhub/BandhubDataset.h5' '/scratch/work/marl/bandhub/unprocessedAudio' '/scratch/work/marl/bandhub/processedAudio' '/scratch/work/marl/bandhub/tempFiles' 0 100 True

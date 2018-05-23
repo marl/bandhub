@@ -248,6 +248,20 @@ def grab_old_data(row):
 
 
 def write_data(hdfName, songsCol, fileName, startIdx, documentLimit):
+    '''
+    This functions writes to the data to the hdf5 file.
+    
+    Parameters
+    ----------
+    hdfName : str
+        Name of the hdf5 file
+    songCol : int
+        
+        
+    Returns
+    -------
+    None
+    '''
 #Grabs all of the data of interest from the dataset and puts it into a pandas Dataframe and stores in HDF file
 # ========================================================================================
     currData = pd.read_hdf(hdfName, "bandhub") # Read in HDF file.
@@ -275,6 +289,7 @@ def write_data(hdfName, songsCol, fileName, startIdx, documentLimit):
     
     rowCount = startIdx
     frameCount = 0;
+    frameCountLimit = 199;
     #df = pd.DataFrame(columns = cols) #empty dataframe object
     for name,group in groupedData:
         songId = pd.unique(group.songId)[0]
@@ -333,8 +348,8 @@ def write_data(hdfName, songsCol, fileName, startIdx, documentLimit):
                     
                     frameCount += 1
                     
-                    if (frameCount > 199):
-                        df.index = pd.Series(df.index) + (rowCount - 99)
+                    if (frameCount > frameCountLimit):
+                        df.index = pd.Series(df.index) + (rowCount - frameCountLimit)
                         hdf.append('bandhub', df, format = 'table', min_itemsize = 800, data_columns = True, compression = 'zlib')
                         df = pd.DataFrame(columns = cols)
                         frameCount = 0;
@@ -349,7 +364,9 @@ def write_data(hdfName, songsCol, fileName, startIdx, documentLimit):
             print('AutoReconnect error')
             hdf.close()
             #catch reconnect error and close file
-
+    
+    df.index = pd.Series(df.index) + (rowCount - frameCount)
+    hdf.append('bandhub', df, format = 'table', min_itemsize = 800, data_columns = True, compression = 'zlib')
     hdf.close()
     print('Appending Complete, HDF file closed')
     #this line of code shouldn't be reached, but included to be safe.

@@ -4,12 +4,8 @@
 
 # ========================================================================================
 import argparse
-import pymongo
 import pandas as pd
 import numpy as np
-from bson.objectid import ObjectId
-import os
-import json
 import os
 import urllib
 import requests
@@ -144,7 +140,7 @@ def download(HDFName, outputPathUnprocessed,outputPathProcessed, tempPath, start
 
         print(rowCounter)
         sys.stdout.flush()
-        if rowCounter > rowLimit+startIndex:
+        if rowCounter > rowLimit+startIndex-1:
             print("Final Row Processed", rowCounter - 1)
             break
 
