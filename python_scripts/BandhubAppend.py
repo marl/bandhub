@@ -1,7 +1,15 @@
-# Written by Gregory Reardon - Music and Audio Research Lab (MARL)
-# Append audio effects to current HDF file of bandhub dataset
-# Running this code directly perform the appending and write out a new HDF file
+'''
+Written by Gregory Reardon - Music and Audio Research Lab (MARL)
 
+This function reads in the dataset created using the function BandhubFileCreation.py
+and appends new fields (namely additional audio effects) from the bandhub mongodb
+database. The old fields and the additional fields are then written out as a new 
+HDF file.
+
+Running this code directly perform the appending and writes out a new HDF file
+
+Please use the associated script AppendBatch.sh to run this script
+'''
 # ========================================================================================
 import argparse
 import pymongo
@@ -15,29 +23,84 @@ import sys
 # IMPORTS
 # ========================================================================================
 
+
 def initialize(mongoPortNum):
-#Initializes and returns all the database collections.
-# ========================================================================================
+    '''
+    This function intializes the songs collection in the bandhub mongodb database and
+    returns the collection.
+    
+    Parameters
+    ----------
+    mongoPortNum : int
+        Port number of the mongod process.        
+        
+    Returns
+    -------
+    songsCollection : object
+        The collection of songs in the bandhub mongodb database
+    '''
     client = pymongo.MongoClient('localhost',mongoPortNum) #connection to MongoDB instance
     db = client.get_database('b=bandhub') #grab database
     songsCollection = db.get_collection('songsStream')
     print('Setup Complete, collections grabbed')
     return songsCollection
 
+
 def check_for_null(string_data):
-# Checks if the old data is null using pd.null and sets the string to None for dtype matching
-# ========================================================================================
+    '''
+    This function checks if an input string is null.
+    
+    Parameters
+    ----------
+    string_data : str
+        Any string grabbed from the HDF file
+        
+    Returns
+    -------
+    string_data : str
+        None if the string is null else the string is returned.
+    '''
     if pd.isnull(string_data):
         string_data = None    
     return string_data
 
+
 def unicode_truncate(s, length, encoding = 'utf-8'):
+    '''
+    This function checks if an input string as encoded with utf-8 is greater than length. 
+    If so, the string is truncated. 
+    
+    Parameters
+    ----------
+    s : str
+        Input str to be checked for necessary truncation before storage in HDF5
+    length : int
+        Max length of the input string
+    encoding : str
+        Encoding used by the HDF file for storage (for Pandas this is utf-8)
+        
+    Returns
+    -------
+    trunacted_string : str
+        A truncated string for storage in HDF file 
+    '''
     encoded = s.encode(encoding)[:length]
     return encoded.decode(encoding, 'ignore')
 
+
 def fill_blank_settings():
-# Fill default/null settings for HDF store if no track settings are available.
-# ========================================================================================
+    '''
+    This functions returns default/blank settings if no track settings are found in the 
+    associated song collection
+    
+    Parameters
+    ----------
+    None
+        
+    Returns
+    -------
+    18 track settings variables with default values (types: bool, str, and int)
+    '''
     volume1 = -1
     volume2  = -1
     mute1 = False
@@ -60,12 +123,24 @@ def fill_blank_settings():
     return (volume1, volume2, mute1, mute2, solo1, solo2, compressorValue1, compressorValue2,
     echoValue1, echoValue2, noiseGateValue1, noiseGateValue2, panValue1, panValue2, 
     reverbValue1, reverbValue2, eqValue1, eqValue2)
-    
+
+
 def grab_audio_effects_settings(trackSettings):
-# Grabs all the audio effects settings for a specific track.
-# Pass in the the track settings associated with a specific track and information is returned.
-# Note: Track settings are located in the songs collection, NOT the track collection
-# ========================================================================================
+    '''
+    This functions grabs the audio effects settings for an associated track
+    Note: Track settings are located in the songs collection, NOT the track collection.
+          Also, there are two possible locations of the audio effects. First, in the
+          audioChannels field. Second, outside the audioChannels field in the track settings  
+    
+    Parameters
+    ----------
+    trackSettings : dictionary
+        The settings of a track which is located in the songs collection
+        
+    Returns
+    -------
+    18 track settings variables (types : bool, str, int, and float )
+    '''
     volume1 = None
     volume2 = None
     mute1 = None
@@ -96,10 +171,10 @@ def grab_audio_effects_settings(trackSettings):
     eqState2 = None
     eqValue1 = None
     eqValue2 = None
-    #reset these variables if we move to a new track
+    #reset these variables
 
     audioChannel = trackSettings.get('audioChannels')
-    #to be used to grab track settings
+    #to be used to grab track settings in the audioChannels
 
     if audioChannel is not None:
         volume1 = audioChannel[0].get('volume')
@@ -201,20 +276,30 @@ def grab_audio_effects_settings(trackSettings):
          
     if eqValue1 is not None:
         eqValue1 = [ round(elem,2) if elem is not None else elem for elem in eqValue1]
-        #eqValue1 = np.around(np.array(eqValue1),3).tolist()
         eqValue1 = json.dumps(eqValue1)
     if eqValue2 is not None:
         eqValue2 = [round(elem,2) if elem is not None else elem for elem in eqValue2]
-        #eqValue2 = np.around(np.array(eqValue2),3).tolist()
         eqValue2 = json.dumps(eqValue2)
     
     return (volume1, volume2, mute1, mute2, solo1, solo2, compressorValue1, compressorValue2,
     echoValue1, echoValue2, noiseGateValue1, noiseGateValue2, panValue1, panValue2, 
     reverbValue1, reverbValue2, eqValue1, eqValue2)
 
+
 def grab_old_data(row):
-#Grab data from row of other HDF file
-# ========================================================================================
+    '''
+    This functions grabs a row of data from the original HDF file for writing to a new 
+    HDF file. 
+    
+    Parameters
+    ----------
+    row : dictionary 
+        dictionary containing of row of data from the original HDF file
+        
+    Returns
+    -------
+    24 different fields of varying types for storage in new HDF file
+    '''
     trackId = row.trackId
     songId = row.songId
     masterOwner = check_for_null(row.masterOwner)
@@ -246,24 +331,29 @@ def grab_old_data(row):
     mixedVideo, musicBrainzID, newMusicBrainzID, publicSongCollectionIndex)
 
 
-
 def write_data(hdfName, songsCol, fileName, startIdx, documentLimit):
     '''
-    This functions writes to the data to the hdf5 file.
+    This functions writes data to the new hdf5 file. Grabs all of the data of interest 
+    from the old dataset and puts it into a pandas Dataframe and stores in new HDF file
     
     Parameters
     ----------
     hdfName : str
-        Name of the hdf5 file
-    songCol : int
-        
+        Name of original hdf5 file to which new fields must be added
+    songsCol : object
+        Bandhub mongodb songs collections which contains relevant audio effects to be
+        added as new fields
+    fileName : str
+        Name of new hdf file to be created
+    startIdx : int
+        Row index from which to grab from the old dataset 
+    documentLimit : int 
+        Total number of rows to be grabbed from the old dataset.
         
     Returns
     -------
     None
     '''
-#Grabs all of the data of interest from the dataset and puts it into a pandas Dataframe and stores in HDF file
-# ========================================================================================
     currData = pd.read_hdf(hdfName, "bandhub") # Read in HDF file.
     
     currData = currData.iloc[startIndex:startIndex + documentLimit]
@@ -284,13 +374,12 @@ def write_data(hdfName, songsCol, fileName, startIdx, documentLimit):
     'echoValue1','echoValue2', 'noiseGateValue1', 'noiseGateValue2', 'reverbValue1', 
     'reverbValue2', 'eqValue1', 'eqValue2']
 
-    songFields = {'settings':1, 'subTitle':1}       
     # Fields needed in the song collection, used for projecting to improve performance
+    songFields = {'settings':1, 'subTitle':1}       
     
     rowCount = startIdx
     frameCount = 0;
-    frameCountLimit = 199;
-    #df = pd.DataFrame(columns = cols) #empty dataframe object
+    frameCountLimit = 199; #how many rows of data are accumulated before writing to file
     for name,group in groupedData:
         songId = pd.unique(group.songId)[0]
         try:
@@ -299,12 +388,14 @@ def write_data(hdfName, songsCol, fileName, startIdx, documentLimit):
             for doc in songDoc:
                 songSettings = doc.get('settings')
                 subTitle = doc.get('subTitle')
+                
+                # truncate subtitle if longer than 800 characters (when encoded with UTF-8)
                 if len(subTitle.encode('utf-8')) > 800:
                     print('subtitle above length 800')
                     subTitle = unicode_truncate(subTitle, 800)
                     #print(len(subTitle.encode('utf-8')))
                 
-                trackCount = 0
+                trackCount = 0 #used for indexing into the grouped data
                 for track in trackIds:
                     trackSettings = songSettings.get(track)
                     if trackSettings is not None:
@@ -369,16 +460,32 @@ def write_data(hdfName, songsCol, fileName, startIdx, documentLimit):
     hdf.append('bandhub', df, format = 'table', min_itemsize = 800, data_columns = True, compression = 'zlib')
     hdf.close()
     print('Appending Complete, HDF file closed')
-    #this line of code shouldn't be reached, but included to be safe.
 
 
-# MAIN FUNCTION
-# ========================================================================================
-#if running the file directly perform the following
 if __name__ == '__main__':
-# ========================================================================================
+    '''
+    This functions is called if this .py script is run directly and parses the arugments
+    and passes them to the functions which perform the new dataset creation. 
+    
+    Parameters (in the accompanying .sh script)
+    ----------
+    hdfName : str
+        Name of the old hdf5 file whose information is to be appended
+    portNum : int
+        Port number of the mongo process run in the batch script
+    outputFileName : str
+        Name of the new hdf5 file to be written
+    startIndex : int
+        First row of the data to be grabbed (0 is the first row)
+    documentLimit : int
+        Total number of rows of the old dataset to be processed and written out
+        
+    Returns
+    -------
+    None
+    '''
     parser = argparse.ArgumentParser()
-    parser.add_argument("HDFFile", help='Name of HDF File to be rewritten', type=str)
+    parser.add_argument("hdfFile", help='Name of HDF File to be rewritten', type=str)
     parser.add_argument("portNum", help='Port Number of Mongo Instance', type=int)
     parser.add_argument("outputFileName", help = 'Name of hdf file to be output (ie: bandhub.h5)', type=str)
     parser.add_argument("startIndex", help = 'Index in the songs collection from which to begin file creation', type=int)
@@ -386,7 +493,7 @@ if __name__ == '__main__':
     #arguments to parse 
 
     args = parser.parse_args()
-    hdfName = args.HDFFile
+    hdfName = args.hdfFile
     port = args.portNum
     outputFN = args.outputFileName
     startIndex = args.startIndex
@@ -396,4 +503,3 @@ if __name__ == '__main__':
     print('Arugments parsed, ready to begin writing')
     songsCollection = initialize(port) #call the initialize function
     write_data(hdfName, songsCollection, outputFN, startIndex, documentLimit) #perform the file creation
-# ========================================================================================

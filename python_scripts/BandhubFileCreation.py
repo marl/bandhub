@@ -1,7 +1,13 @@
-# Written by Gregory Reardon - Music and Audio Research Lab (MARL)
-# Create HDF file of bandhub dataset
-# Running this code directly will create the dataset.
+'''
+Written by Gregory Reardon - Music and Audio Research Lab (MARL)
 
+This function creates an hdf5 dataset containing relevant information contained in the
+bandhub mongodb database.
+
+Running this code directly writes out a new HDF file
+
+Please use the associated script BandhubBatch.sh to run this script
+'''
 # ========================================================================================
 import argparse
 import pymongo
@@ -16,9 +22,28 @@ import time
 
 
 def initialize(mongoPortNum, database):
-#Initializes and returns all the database collections.
-# ========================================================================================
+    '''
+    This functions connects to the mongo client and returns all the database collections
+    
+    Parameters
+    ----------
+    mongoPortNum : int
+        Port number of the mongod process.        
+    database : str
+        Name of the bandhub mongodb database 
+        
+    Returns
+    -------
+    songsCollection : object
+        The songsStream collection of the bandhub mongodb database
+    postsCollection : object
+        The posts collection of the bandhub mongodb database
+    videosCollection : object
+        The mergedVideos collection of the bandhub mongodb database
+    tracksCollection : object
+        The tracksStream collection of the bandhub mongodb database
 
+    '''
     client = pymongo.MongoClient('localhost',mongoPortNum) #connection to MongoDB instance
     db = client.get_database(database) #grab database
     
@@ -30,16 +55,21 @@ def initialize(mongoPortNum, database):
 
     print('Setup Complete, collections grabbed')
     return songsCollection, postsCollection, videosCollection, tracksCollection
-# ========================================================================================
-
-
 
 
 def songInformation(songDocument):
-# Grabs all the information for relevant fields from the songs collection.
-# Pass in a song document and information is returned.
-# ========================================================================================
-
+    '''
+    This functions grabs the information of interest from the passed in songDocument
+    
+    Parameters
+    ----------
+    songDocument : dictionary
+        A document from the songsCollection from which information will be grabbed
+        
+    Returns
+    -------
+    7 different fields from the songDocument
+    '''
     songId = songDocument['_id']     
     #grab songId which is unique for each collaboration
 
@@ -64,6 +94,18 @@ def songInformation(songDocument):
 
 
 def postInformation(postDocument):
+    '''
+    This functions grabs the information of interest from the passed in postDocument
+    
+    Parameters
+    ----------
+    postDocuments : dictionary
+        A document from the postsCollection from which information will be grabbed
+        
+    Returns
+    -------
+    5 different fields from the postsDocument
+    '''
 # Grabs all the information for relevant fields from the posts collection.
 # Pass in a post document and information is returned.
 # ========================================================================================
@@ -87,10 +129,24 @@ def postInformation(postDocument):
 
 
 def videoInformation(videoDocuments, sortedTracks, songMixedVideo):
-# Grabs all the mixed video and audio from a set of matching video documents
-# Pass in a set of video documents, determine which video is final version by
-# matching a sorted version of the published tracks (located in the post collection)
-# to the track IDs in the video document.
+    '''
+    This functions grabs all the mixed video and audio from a set of matching video documents
+    Pass in a set of video documents, determine which video is final version by
+    matching a sorted version of the published tracks (located in the post collection)
+    to the track IDs in the video document.
+    
+    Parameters
+    ----------
+    videoDocuments : cursor
+        Cursor which points to all video documents associated with a specific songID 
+    sortedTracks : list
+    songMixedVideo : 
+        
+    Returns
+    -------
+    None
+    '''
+# 
 #   If fail use the mixed video URL in the song collection.
 # ========================================================================================
     
@@ -122,6 +178,20 @@ def videoInformation(videoDocuments, sortedTracks, songMixedVideo):
 
 
 def trackInformation(trackDocument, trackSettings, isPublished):
+    '''
+    This functions writes to the data to the hdf5 file.
+    
+    Parameters
+    ----------
+    trackDocument : str
+        Name of the hdf5 file
+    trackSettings : int
+    isPublished : 
+        
+    Returns
+    -------
+    None
+    '''
 # Grabs all the track information.
 # Pass in a track document and the tracks settings (from the songs collection) and information is returned.
 #   Track settings from the songs collection are used to cross reference the audio URLs
@@ -198,6 +268,17 @@ def trackInformation(trackDocument, trackSettings, isPublished):
 
 
 def createSortedTrackList(publishedTracks):
+    '''
+    This functions writes to the data to the hdf5 file.
+    
+    Parameters
+    ----------
+    publishedTracks : str
+        
+    Returns
+    -------
+    None
+    '''
 # Pass in all published track and create a sorted list of the ids for comparison.
 # The sorted list is used in the function videoInformation.
 # ========================================================================================
@@ -221,6 +302,17 @@ def createSortedTrackList(publishedTracks):
 
 
 def grabAudioEffectsSettings(trackSettings):
+    '''
+    This functions writes to the data to the hdf5 file.
+    
+    Parameters
+    ----------
+    trackSettings : str
+        
+    Returns
+    -------
+    None
+    '''
 # Grabs all the audio effects settings for a specific track.
 # Pass in the the track settings associated with a specific track and information is returned.
 # Note: Track settings are located in the songs collection, NOT the track collection
@@ -338,6 +430,25 @@ def grabAudioEffectsSettings(trackSettings):
 
 
 def writeData(songsCol, postsCol, videosCol, tracksCol, fileName, ind, documentLimit):
+    '''
+    This functions writes to the data to the hdf5 file.
+    
+    Parameters
+    ----------
+    songsCol : str
+        Name of the hdf5 file
+    postsCol : int
+    videosCol : 
+    tracksCol :
+    fileName : 
+    ind : int
+    documentLimit :
+        
+        
+    Returns
+    -------
+    None
+    '''
 #Grabs all of the data of interest from the dataset and puts it into a pandas Dataframe and stores in HDF file
 # ========================================================================================
 
@@ -513,7 +624,24 @@ def writeData(songsCol, postsCol, videosCol, tracksCol, fileName, ind, documentL
 # ========================================================================================
 #if running the file directly perform the following
 if __name__ == '__main__':
-# ========================================================================================
+    '''
+    This functions is called when the script is run directly. It will download the track 
+    videos to the outputPath, starting at the startIndex and ending at 
+    startIndex + fileLimit.
+    
+    Parameters (in the accompanying .sh script)
+    ----------
+    portNum : int
+        Name of the hdf5 file
+    databaseName : str
+    outputFileName : str
+    startIndex : int
+    documentLimit : int      
+        
+    Returns
+    -------
+    None
+    '''
     parser = argparse.ArgumentParser()
     parser.add_argument("portNum", help='Port Number of Mongo Instance', type=int)
     parser.add_argument("databaseName", help='Name of bandhub dataset in MongoDB', type=str)
