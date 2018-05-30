@@ -58,44 +58,44 @@
 		Uniquely identifies a collaboration or "mix" which might include a single track of a collection of tracks
 * masterOwner - str
 * trackOwner - str
-*	5. Artist - str
-*	6. Title - str
-*	7. subTitle - str
-*	8. Views - int
-*	9. Instrument - str
-*	10. contentTags - str (json)
-*	11. audioURL - str
-*	12. processedAudioURL - str
-*	13. trackVideoURL - str
-*	14. startTime - int
-*	15. trackDuration - float
-*	16. audioSampleRate - int
-*	17. fromYouTube - bool
-*	18. isFinished - bool
-*	19. isPublished - bool
-*	20. hasPublishedTracks - bool
-*	21. mixedAudioURL - str
-*	22. mixedVideoURL - str
-*	23. musicBrainzID - str
-*	24. newMusicBrainzID - str
-*	25. publicSongCollectionIndex - int
-*	26. volume1 - float
-*	27. volume2 - float
-*	28. mute1 - bool
-*	29. mute2 - bool
-*	30. solo1 - bool
-*	31. solo2 - bool
-*	32. compressorValue1 - float
-*	33. compressorValue2 - float
-*	34. panValue1 - float
-*	35. panValue2 - float
-*	36. echoValue1 - float
-*	37. echoValue2 - float
-*	38. noiseGateValue1 - float
-*	39. noiseGateValue2 - float
-*	40. reverbValue1 - float
-*	41. reverbValue2 - float
-*	42. eqValue1 - str (json)
-*	43. eqValue2 - str (json)
+* Artist - str
+* Title - str
+* subTitle - str
+* views - int
+* instrument - str
+* contentTags - str (json)
+* audioURL - str
+* processedAudioURL - str
+* trackVideoURL - str
+* startTime - int
+* trackDuration - float
+* audioSampleRate - int
+* fromYouTube - bool
+* isFinished - bool
+* isPublished - bool
+* hasPublishedTracks - bool
+* mixedAudioURL - str
+* mixedVideoURL - str
+* musicBrainzID - str
+* newMusicBrainzID - str
+* publicSongCollectionIndex - int
+* volume1 - float
+* volume2 - float
+* mute1 - bool
+* mute2 - bool
+* solo1 - bool
+* solo2 - bool
+* compressorValue1 - float
+* compressorValue2 - float
+* panValue1 - float
+* panValue2 - float
+* echoValue1 - float
+* echoValue2 - float
+* noiseGateValue1 - float
+* noiseGateValue2 - float
+* reverbValue1 - float
+* reverbValue2 - float
+* eqValue1 - str (json)
+* eqValue2 - str (json)
 	
 
