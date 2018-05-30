@@ -8,28 +8,28 @@
 ## 1. HDF File creation
 ####	python script: BandhubFileCreation.py
 ####	batch script: BandhubBatch.sh
-		batch script arguments:
+batch script arguments:
 ####	description:
 ####	misc:
 
 ## 2. HDF Effects Append
 ####	python script: BandhubAppend.py
 ####	batch script: AppendBatch.sh
-		batch script arguments: 
+batch script arguments: 
 ####	description:
 ####	misc:
 
 ## 3. Audio Download
 ####	python script: BandhubAudioDownload.py
 ####	batch script: DownloadAudioBatch.sh
-		batch script arguments:
+batch script arguments:
 ####	description:
 ####	misc:
 
 ## 4. Video Download
 ####	python script: BandhubVideoDownload.py
 ####	batch script: DownloadVideoBatch.sh
-		batch script arguments:
+batch script arguments:
 ####	description:
 ####	misc:
 
@@ -97,5 +97,8 @@
 * reverbValue2 - float
 * eqValue1 - str (json)
 * eqValue2 - str (json)
-	
+
+## Dataset Creation Procedure
+
+## Bandhub Basic Statistics
 
