@@ -53,9 +53,9 @@
 ####	The most updated version of the HDF file is located in the /scratch/work/marl/bandhub folder and its titled BandhubDataset.h5. The dataset within the HDF file is entitled "bandhub".
 ####	The dataset contains the following fields:
 * trackId - str
-** Unique trackId which can be used to locate a track in the tracksStream of the Bandhub database
+	* Unique trackId which can be used to locate a track in the tracksStream of the Bandhub database
 * songId - str
-		Uniquely identifies a collaboration or "mix" which might include a single track of a collection of tracks
+	* Uniquely identifies a collaboration or "mix" which might include a single track of a collection of tracks
 * masterOwner - str
 * trackOwner - str
 * Artist - str
