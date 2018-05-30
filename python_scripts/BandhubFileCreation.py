@@ -88,9 +88,6 @@ def songInformation(songDocument):
     allTracks = songDocument.get('trackIDs')
 
     return songId, musicBrainzID, newMusicBrainzID, contentTags, songMixedVideo, views, allTracks
-# ========================================================================================
-
-
 
 
 def postInformation(postDocument):
@@ -106,10 +103,6 @@ def postInformation(postDocument):
     -------
     5 different fields from the postsDocument
     '''
-# Grabs all the information for relevant fields from the posts collection.
-# Pass in a post document and information is returned.
-# ========================================================================================
-    
     artist = postDocument.get('mb_artist')
     title = postDocument.get('title')
     masterOwner = postDocument.get('owner') #masterOwner is owner of individual who starts the collaboration
@@ -123,33 +116,35 @@ def postInformation(postDocument):
     #set bool for whether collaboration is finished. What about completed?
 
     return artist, title, masterOwner, publishedTracks, isFinished
-# ========================================================================================
-
-
 
 
 def videoInformation(videoDocuments, sortedTracks, songMixedVideo):
     '''
     This functions grabs all the mixed video and audio from a set of matching video documents
     Pass in a set of video documents, determine which video is final version by
-    matching a sorted version of the published tracks (located in the post collection)
-    to the track IDs in the video document.
+    matching a sorted version of the published tracks (located in the post document)
+    to the track IDs in the video document. If no match is found. the mixed video URL in 
+    the song collection is used.
+
     
     Parameters
     ----------
     videoDocuments : cursor
         Cursor which points to all video documents associated with a specific songID 
     sortedTracks : list
-    songMixedVideo : 
+        Sorted list of published track IDs located in the post document (see above function).
+        Used for matching to the list of track IDs located in the video document
+    songMixedVideo : str
+        URL to the mixed video which is located in the song document. Note: The mixed 
+        video URL can also be found in the video document.
         
     Returns
     -------
-    None
+    mixedVideo: str
+        URL of the mixed video for a collaboration.
+    mixedAudio: str
+        URL of the mixed audio for a collaboration
     '''
-# 
-#   If fail use the mixed video URL in the song collection.
-# ========================================================================================
-    
     mixedVideo = None
     mixedAudio = None
 
@@ -172,31 +167,25 @@ def videoInformation(videoDocuments, sortedTracks, songMixedVideo):
         #if no matches in the video collection then just grab from the songs collection
 
     return mixedVideo, mixedAudio
-# ========================================================================================
-
-
 
 
 def trackInformation(trackDocument, trackSettings, isPublished):
     '''
-    This functions writes to the data to the hdf5 file.
+    This functions grabs the information of interest from the passed in songDocument.
     
     Parameters
     ----------
-    trackDocument : str
-        Name of the hdf5 file
-    trackSettings : int
+    trackDocument : dictionary
+        Document from the track collection
+    trackSettings : dictionary
+        A dictionary containing settings for a specific track which are located in the
+        corresponding song document 
     isPublished : 
         
     Returns
     -------
-    None
+    10 different fields
     '''
-# Grabs all the track information.
-# Pass in a track document and the tracks settings (from the songs collection) and information is returned.
-#   Track settings from the songs collection are used to cross reference the audio URLs
-# ========================================================================================
-    
     audioURL = trackDocument['audioChannels'][0].get('fileUrl')
     if audioURL is None:
         audioURL = trackDocument.get('audioFileUrl')
@@ -212,7 +201,8 @@ def trackInformation(trackDocument, trackSettings, isPublished):
 
     audioChannel = trackSettings.get('audioChannels')
 
-    #if no effectsAudioUrl, try these two locations. Also check to make sure its not a duplicate of the file in the track stream
+    #If no effectsAudioUrl, try these two locations. 
+    #Also check to make sure its not a duplicate of the URL in the track stream
     if cleanProcessedAudioURL is None:
         if audioChannel is not None:
             dummyURL = audioChannel[0].get('audioFileUrl')
@@ -221,7 +211,10 @@ def trackInformation(trackDocument, trackSettings, isPublished):
     if cleanProcessedAudioURL is None:
         dummyURL = trackSettings.get('audioFileUrl')
         if dummyURL != audioURL:
-            processedAudioURL = dummyURL                
+            processedAudioURL = dummyURL      
+    # *** NOTE *** 
+    #The processedAudioURL was later removed from the dataset only leaving
+    #the cleanProcessedAudioURL, but renamed as processedAudioURL
 
     trackVideo = trackDocument.get('videoFileUrl')
     trackVideo2 = trackDocument.get('sourceVideoURL')
@@ -233,13 +226,6 @@ def trackInformation(trackDocument, trackSettings, isPublished):
         fromYouTube = True
     else:
         fromYouTube = False
-
-        #if trackVideo is not None:
-        #    fromYouTube = True
-        #else:
-        #    fromYouTube = False
-    #else:
-        #fromYouTube = False 
     #grab video files. Set fromYouTube bool
 
     trackOwner = trackDocument['owner']
@@ -258,31 +244,29 @@ def trackInformation(trackDocument, trackSettings, isPublished):
             trackDuration = totalFrames/audioSampleRate
     # if not track duration field them compute the track duration
 
-
     instrument = trackDocument.get('instrumentAssignedBySongOwner') #track instrument
 
-    return audioURL, cleanProcessedAudioURL, processedAudioURL, trackVideo, startTime, trackOwner, trackDuration, audioSampleRate, instrument, fromYouTube
-# ========================================================================================
-
-
+    return (audioURL, cleanProcessedAudioURL, processedAudioURL, trackVideo, startTime, 
+    trackOwner, trackDuration, audioSampleRate, instrument, fromYouTube)
 
 
 def createSortedTrackList(publishedTracks):
     '''
-    This functions writes to the data to the hdf5 file.
+    This functions takes a list of track IDs and creates a sorted list for comparison
+    with the list of trackIDs in the video document
     
     Parameters
     ----------
-    publishedTracks : str
+    publishedTracks : list of str
+        List of published track IDs
         
     Returns
     -------
-    None
+    sortedTrackList : list of str
+        Sorted list of published track ids
+    publishedTrackList : list of str
+        Unsorted list of publishd track ids (after removing invalid/missing list entries)
     '''
-# Pass in all published track and create a sorted list of the ids for comparison.
-# The sorted list is used in the function videoInformation.
-# ========================================================================================
-    
     publishedTrackList = []
     for track in publishedTracks:
         try:
@@ -296,28 +280,27 @@ def createSortedTrackList(publishedTracks):
     #video document holds the final mix.
 
     return sortedTrackList, publishedTrackList
-# ========================================================================================
-
-
 
 
 def grabAudioEffectsSettings(trackSettings):
     '''
-    This functions writes to the data to the hdf5 file.
+    This functions grabs all of the audio effects settings for a specific track. Track 
+    settings are located in the song document inside a dictionary whose keys are the track
+    IDs.
     
+    NOTE : These audio effects were later removed and replaced by the full set of audio
+           effects in the script BandhubAppend.py. Please see that script for the 
+           final audio effects fields (and the most recent dataset fields)
+              
     Parameters
     ----------
-    trackSettings : str
+    trackSettings : dictionary
+        Dictionary holding the audio effects added to a particular track
         
     Returns
     -------
-    None
+    8 different audio effects fields
     '''
-# Grabs all the audio effects settings for a specific track.
-# Pass in the the track settings associated with a specific track and information is returned.
-# Note: Track settings are located in the songs collection, NOT the track collection
-# ========================================================================================
-
     trackVolume = None
     mute = None
     compressorState = None
@@ -337,7 +320,6 @@ def grabAudioEffectsSettings(trackSettings):
 
     audioChannel = trackSettings.get('audioChannels')
     #to be used to grab track settings
-
 
     ### AUDIO EFFECTS SETTINGS ###
     #conflicting values of some effects (including track volume)
@@ -366,7 +348,6 @@ def grabAudioEffectsSettings(trackSettings):
         trackVolume = trackSettings.get('volume')
     if mute is None:
         mute = trackSettings.get('mute')
-    #if cannot find track volume, check here
 
     if(mute == True):
         trackVolume = 0
@@ -424,34 +405,43 @@ def grabAudioEffectsSettings(trackSettings):
     #print(eqValue)
 
     return trackVolume, mute, compressorValue, echoValue, noiseGateValue, panValue, reverbValue, solo
-# ========================================================================================
-
-
 
 
 def writeData(songsCol, postsCol, videosCol, tracksCol, fileName, ind, documentLimit):
     '''
-    This functions writes to the data to the hdf5 file.
+    This functions calls the above functions, gathers all relevant information for a given
+    track into a single row of data. This row of data is converted to a pandas dataframe
+    and then written to the HDF file.
+    
+    NOTE : Later, it was found that writing to the HDF for each row is extremely inefficient
+           and may explain while it took exorbitant amounts of time to write out the 
+           original HDF file. Please see BandhubAppend.py for how this script can be
+           modified to potentially improve its performance (if one is looking to recreate
+           the dataset). In BandhubAppend.py, data is gathered in 200 row chunks and then
+           written to the file. 
+           
     
     Parameters
     ----------
-    songsCol : str
-        Name of the hdf5 file
-    postsCol : int
-    videosCol : 
-    tracksCol :
-    fileName : 
+    songsCol : object?
+        Mongodb collection of songsStream
+    postsCol : object?
+        Mongodb collection of posts
+    videosCol : object?
+        Mongodb collection of mergedVideos
+    tracksCol : object?
+        Mongodb collection of tracksStream
+    fileName : str
+        Name of the HDF file that will be written out
     ind : int
-    documentLimit :
-        
+        Song collection index to begin at
+    documentLimit : int
+        Total number of songs to be looked through
         
     Returns
     -------
     None
     '''
-#Grabs all of the data of interest from the dataset and puts it into a pandas Dataframe and stores in HDF file
-# ========================================================================================
-
     #open the hdf file for storage.
     hdf = pd.HDFStore(fileName)
     print('HdF opened')
@@ -464,20 +454,18 @@ def writeData(songsCol, postsCol, videosCol, tracksCol, fileName, ind, documentL
     songsFields = {'musicbrainzMetadataId':1,'newMusicbrainzMetadataId':1, 'channels':1,'mp4MergedVideoUrl':1,'numberOfViews':1, 'settings':1, 'trackIDs':1, 'hasPublishedTracks':1}
     postsFields = {'mb_artist':1,'title':1,'owner':1,'participantsInfo':1,'collabSettings':1}
     videoFields = {'mp4MergedVideoUrl':1, 'mp3AudioUrl':1, 'trackIds':1}
-    trackFields = {'audioChannels':1, 'audioFileUrl':1, 'startTimeValue':1,'videoFileUrl':1,'sourceVideoURL':1,'owner':1,'durationInSeconds':1,'instrumentAssignedBySongOwner':1}       
-    # fields needed in each collection, used for projecting to improve performance
-    # 2) add isPublished field
-    # 3) add whether song collab has published tracks
+    trackFields = {'audioChannels':1, 'audioFileUrl':1, 'startTimeValue':1,'videoFileUrl':1,'sourceVideoURL':1,'owner':1,'durationInSeconds':1,'instrumentAssignedBySongOwner':1}
+    #fields needed in each collection, used for projecting to improve performance
 
     cursor = songsCol.find({'access' : 1}, songsFields).skip(ind).batch_size(15).limit(documentLimit)
-    #grab public song collaborations. Skip how many indices we want, limit files grabbed at one time to 30.
-    #Limit the number of files to be looked through to 30,000
+    #grab public song collaborations.
+    #1. Skip how many indices we want (ind)
+    #2. limit files grabbed from database at one time to 15.
+    #3. Limit the number of files to be looked through to documentLimit
 
     i = ind
     try:
         for songDoc in cursor:
-        #iterate through each song
-            #print('For current song')
             if (i%10 == 0):
                 percent = i / max_i
                 print('Creating File: %f%%' % percent)
@@ -491,20 +479,20 @@ def writeData(songsCol, postsCol, videosCol, tracksCol, fileName, ind, documentL
                 print(songId)
                 i = i+1
                 continue
-            #if no trackIDs for a song then immediately move to next song. Index needed to move correctly
+            #if no trackIDs for a song then immediately move to next song.
 
             post = postsCol.find({'objectId' : songId}, postsFields).limit(1)
             #grab the corresponding post document
 
-            #print('For post document')
             for postDoc in post:
             #iterate through corresponding post document and grab relevant information
                 
                 artist, title, masterOwner, publishedTracks, isFinished = postInformation(postDoc)
                 #grab and store post document information        
                 
-                #find the corresponding video documents. Note: there are multiple videos docs for the same collaboration
-                #as instruments are added and tracks are swapped out
+                #find the corresponding video documents. 
+                #Note: there are multiple videos docs for the same collaboration as 
+                #instruments are added and tracks are swapped out
 
                 if not publishedTracks:
                     print('No published tracks')
@@ -514,43 +502,25 @@ def writeData(songsCol, postsCol, videosCol, tracksCol, fileName, ind, documentL
                     hasPublishedTracks = False
                     mixedVideo = None
                     mixedAudio = None
-                    #publishedTracks = songTracks
-                    #break
-                    #if sorted track list is empty, ie: no track id strings, then break and move to next song
                 else:
                     hasPublishedTracks = True
                     videoDocuments = videosCol.find({'songId': songId}, videoFields)
-                    #print('video documents grabbed')
                     sortedTrackList, publishedTrackList = createSortedTrackList(publishedTracks)
                     mixedVideo, mixedAudio = videoInformation(videoDocuments, sortedTrackList, songMixedVideo)
                     #create a sorted list of published tracks if there are tracks that are published
-
 
                 crossHasPublishedTracks = songDoc.get('hasPublishedTracks')
                 if crossHasPublishedTracks is not None:
                     if not (hasPublishedTracks == crossHasPublishedTracks):
                         print('hasPublishedTracks does not match crossHasPublishedTracks')
                         print(songId)
-                #error check if the field hasPublishedTracks in the songs document matches what the post document reports
+                #error check if the field hasPublishedTracks in the songs document matches 
+                #what the post document reports
 
-
-                #if not sortedTracks:
-                #    print('No sorted tracks')
-                #    print('error found')
-                #    break
-                # shouldn't need this error check if I'm checking for published tracks, TBD
-
-                #grab the correct mixed video and audio
-                #this needs to be fixed to handle when there are no sorted tracks. Could just move this above
-                #but I need to check if its always the case that no video document exists if tracks arent published
-
-                #print('For each published track')
                 for track in allTracks:
                 #for all tracks grab the information from the songs collection
 
-                    #trackId = track['_id']
                     trackId = track
-                    #this is new
 
                     isPublished = False
                     if hasPublishedTracks is True:
@@ -563,7 +533,6 @@ def writeData(songsCol, postsCol, videosCol, tracksCol, fileName, ind, documentL
 
                     trackSettings = songDoc['settings'].get(str(trackId))
                     #grab trackId and settings of published track.
-                    #everything else from here should be the same. 
 
                     if trackSettings is None:
                         if isPublished:
@@ -573,14 +542,12 @@ def writeData(songsCol, postsCol, videosCol, tracksCol, fileName, ind, documentL
                         continue
                     #if no track settings move to next track
 
-                    #grab all the audio effects for a track from the songs collection
                     trackVolume, mute, compressorValue, echoValue, noiseGateValue, panValue, reverbValue, solo = grabAudioEffectsSettings(trackSettings)
-                    #print('Audio effects grabbed')
+                    #grab all the audio effects for a track from the songs collection
 
                     trackDocument = tracksCol.find({'_id' : trackId}, trackFields).limit(1)
                     #grab the corresponding track document
                     
-                    #print('Looking through track document')
                     for trackDoc in trackDocument:        
                     #look through corresponding track document    
                         if trackDoc['audioChannels']:
@@ -591,7 +558,7 @@ def writeData(songsCol, postsCol, videosCol, tracksCol, fileName, ind, documentL
                                 print(songId)
                                 print(trackId)
                             continue
-                        #print('Ready to create row of data')
+
                         data = []  #to hold a row of data 
                         data.append([str(trackId), str(songId), masterOwner, trackOwner, artist, title, views, instrument, contentTags, audioURL, cleanProcessedAudioURL, processedAudioURL, startTime, float(trackDuration), int(audioSampleRate), float(trackVolume), float(compressorValue), float(panValue), float(echoValue), float(noiseGateValue), float(reverbValue), solo, trackVideo, fromYouTube, isFinished, isPublished, hasPublishedTracks, mixedAudio, mixedVideo, str(musicBrainzID), str(newMusicBrainzID), i])
                         df = pd.DataFrame(data, columns = cols) 
@@ -600,13 +567,13 @@ def writeData(songsCol, postsCol, videosCol, tracksCol, fileName, ind, documentL
                         hdf.append('bandhub', df, format = 'table', min_itemsize = 500, data_columns = True, compression = 'zlib')
                         print('Data row appended')
                         #append data to file
+                        # Note: the min_itemsize is changed to 800 in BandhubAppend.py
 
             i = i + 1 #increment index counter
     except pymongo.errors.AutoReconnect:
         print('AutoReconnect error')
         hdf.close()
         #catch reconnect error and close file
-    
     try:
         cursor.next()
         #check if you can continue to iterate through the cursor
@@ -619,24 +586,27 @@ def writeData(songsCol, postsCol, videosCol, tracksCol, fileName, ind, documentL
     #this line of code shouldn't be reached, but included to be safe.
 
 
-
-# MAIN FUNCTION
-# ========================================================================================
-#if running the file directly perform the following
 if __name__ == '__main__':
     '''
-    This functions is called when the script is run directly. It will download the track 
-    videos to the outputPath, starting at the startIndex and ending at 
-    startIndex + fileLimit.
+    This functions is called when the script is run directly. It will iterate through the
+    bandhub song collection (limited to songs that are considered public) starting at 
+    startIndex and ending at startIndex+documentLimit and generate an HDF file with the
+    fields of interest located in all the bandhub collections (songs, tracks, posts, 
+    and mergedVideos)
     
     Parameters (in the accompanying .sh script)
     ----------
     portNum : int
         Name of the hdf5 file
     databaseName : str
+        Name of the mongdb database that contains all of the bandhub collections
     outputFileName : str
+        Name of the HDF file to be written out
     startIndex : int
-    documentLimit : int      
+        Start index in the song collection (public songs only) that iterated over to 
+        generate the HDF file
+    documentLimit : int
+        Total number of songs in the song collection to be looked through
         
     Returns
     -------
@@ -657,8 +627,7 @@ if __name__ == '__main__':
     startIndex = args.startIndex
     documentLimit = args.documentLimit
     #parse args and store values
+    
     print('Arugments parsed, ready to begin writing')
-    songsCollection, postsCollection, videosCollection, tracksCollection = initialize(port,db) #call the initialize function
-    writeData(songsCollection, postsCollection, videosCollection, tracksCollection, outputFN, startIndex, documentLimit) #perform the file creation
-# ========================================================================================
-
+    songsCollection, postsCollection, videosCollection, tracksCollection = initialize(port,db)
+    writeData(songsCollection, postsCollection, videosCollection, tracksCollection, outputFN, startIndex, documentLimit)
