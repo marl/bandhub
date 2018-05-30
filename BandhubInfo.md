@@ -1,5 +1,5 @@
 #### Written by Gregory Reardon
-#### This .txt file contains the documentation for python scripts, batch scripts,  HDF file fields, and miscellaneous observations with respect to the Bandhub dataset.
+#### This .md file contains the documentation for python scripts, batch scripts,  HDF file fields, and miscellaneous observations with respect to the Bandhub dataset.
 
 #### For more information or clarification with respect to any of the below content, please contact Gregory Reardon at the following email: gregory.reardon9@gmail.com 
 
