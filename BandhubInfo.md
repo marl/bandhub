@@ -20,7 +20,8 @@
         generate the HDF file. There were approximately 420000 "public songs" (aka mixes or collaborations) in the database
     documentLimit : int
         Total number of songs in the song collection to be looked through
-####	description: These scripts will incrementally iterate through the Bandhub monogodb database (specifically the songsStream) and generate an HDF file with name outputFileName containing relevant information. This process took a very long time and so multiple copies of BandhubFileCreation.py and BandhubBatch.sh were used to generate partitions of the dataset which were then combined using the CombineDatasetPartitions.ipynb
+####	description:
+These scripts will incrementally iterate through the Bandhub monogodb database (specifically the songsStream) and generate an HDF file with name outputFileName containing relevant information. This process took a very long time and so multiple copies of BandhubFileCreation.py and BandhubBatch.sh were used to generate partitions of the dataset which were then combined using the CombineDatasetPartitions.ipynb
 ####	misc: CombineDatasetPartitions.ipynb
 
 ## 2. HDF Effects Append
@@ -37,7 +38,8 @@
         First row of the data to be grabbed (0 is the first row)
     documentLimit : int
         Total number of rows of the old dataset to be processed and written out
-####	description: These scripts take the original HDF file created using the scripts in section 1 (BandhubFileCreation.py and BandhubBatch.sh) and appends on extra audio effects information. In the original, some of the audio effects were mixed together. In the version created using these scripts, the audio effects are split into two categories based on where they are located in the songs collection. In the songs collection field "settings," a specific tracks settings can be located using the track ID as a keyword. The audio effects settings are located either within those individual track settings or further nested inside the field audioChannels[0]. These two different settings (which for some settings appear to have different ranges) are denoted as x2 and x1, respectively, where x is the type of track setting (volume, mute, solo, reverb, eq etc. ). The effects appending goes much faster than the previous set of scripts and can be run on the whole dataset or split into partitions and once again combined using the Jupyter notebook script CombineDatasetPartitions.ipynb. In addition, the subTitle field was added and the processedAudioURL field was altered.
+####	description:
+These scripts take the original HDF file created using the scripts in section 1 (BandhubFileCreation.py and BandhubBatch.sh) and appends on extra audio effects information. In the original, some of the audio effects were mixed together. In the version created using these scripts, the audio effects are split into two categories based on where they are located in the songs collection. In the songs collection field "settings," a specific tracks settings can be located using the track ID as a keyword. The audio effects settings are located either within those individual track settings or further nested inside the field audioChannels[0]. These two different settings (which for some settings appear to have different ranges) are denoted as x2 and x1, respectively, where x is the type of track setting (volume, mute, solo, reverb, eq etc. ). The effects appending goes much faster than the previous set of scripts and can be run on the whole dataset or split into partitions and once again combined using the Jupyter notebook script CombineDatasetPartitions.ipynb. In addition, the subTitle field was added and the processedAudioURL field was altered.
 ####	misc: CombineDatasetPartitions.ipynb
 
 ## 3. Audio Download
@@ -62,7 +64,8 @@
     publishedTracks : bool
         True if you want only the tracks that are considered published, false it you want
         to download all files in the HDF file. 
-####	description: These scripts download unprocessed (audioURL) and processed (processedAudioURL).ogg audio files (there is a small subset that are .m4a that were not able to be downloaded using pysoundfile), zeropad all files such that all tracks within a mix are of uniform length, and write out the resulting file as .flac. The raw .ogg files are also downloaded to the tempPath directory and need to be manually deleted by user (rm -r tempPath) after the script has been run. Multiple copies of these scripts were also created and used to download different sections of the dataset simultaneously to reduce the time it took to download.
+####	description:
+These scripts download unprocessed (audioURL) and processed (processedAudioURL).ogg audio files (there is a small subset that are .m4a that were not able to be downloaded using pysoundfile), zeropad all files such that all tracks within a mix are of uniform length, and write out the resulting file as .flac. The raw .ogg files are also downloaded to the tempPath directory and need to be manually deleted by user (rm -r tempPath) after the script has been run. Multiple copies of these scripts were also created and used to download different sections of the dataset simultaneously to reduce the time it took to download.
 ####	misc:
 
 ## 4. Video Download
@@ -80,11 +83,13 @@
         Total number of rows to be processed/downloaded (soft cap)
     publishedTracks : bool
         Name of the new hdf5 file to be written
-####	description: These scripts download .mp4 track video (trackVideoURL). This procedure is much faster than the scripts in section 3, so multiple copies were not run. Note that YouTube videos were not downloaded.
+####	description:
+These scripts download .mp4 track video (trackVideoURL). This procedure is much faster than the scripts in section 3, so multiple copies were not run. Note that YouTube videos were not downloaded.
 
 ## 5. File Transfer
 ####	batch script: FileTransfer.sh
-####	description: This script simply uses the rsync command to copy over files to the /scratch/work/marl/bandhub/ folder. Because the audio was originally downloaded to my scratch folder (/scratch/gjr286/) there was a need to copy over the files. 
+####	description:
+This script simply uses the rsync command to copy over files to the /scratch/work/marl/bandhub/ folder. Because the audio was originally downloaded to my scratch folder (/scratch/gjr286/) there was a need to copy over the files. 
 ####	misc:
 
 ## 6. Graveyard
