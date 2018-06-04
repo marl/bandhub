@@ -8,9 +8,9 @@
 ## 1. HDF File creation
 ####	python script: BandhubFileCreation.py
 ####	batch script: BandhubBatch.sh
-batch script arguments: 
-    portNum : int
-        Name of the hdf5 file
+#### 	batch script arguments: 
+    *portNum : int
+        *Name of the hdf5 file
     databaseName : str
         Name of the mongdb database that contains all of the bandhub collections
     outputFileName : str
@@ -26,9 +26,9 @@ batch script arguments:
 ## 2. HDF Effects Append
 ####	python script: BandhubAppend.py
 ####	batch script: AppendBatch.sh
-batch script arguments:     
-    hdfName : str
-        Name of the old hdf5 file whose information is to be appended
+####    batch script arguments:     
+    * hdfName : str
+        * Name of the old hdf5 file whose information is to be appended
     portNum : int
         Port number of the mongo process run in the batch script
     outputFileName : str
@@ -43,9 +43,9 @@ batch script arguments:
 ## 3. Audio Download
 ####	python script: BandhubAudioDownload.py
 ####	batch script: DownloadAudioBatch.sh
-batch script arguments: 
-    hdfFile : str
-        Name of the old hdf5 file whose information is to be appended
+####    batch script arguments: 
+    * hdfFile : str
+        * Name of the old hdf5 file whose information is to be appended
     outputPathUnprocessed : str
         Path to the directory where the unprocessed audio will be written
         (ie: /scratch/netID/unprocessedAudio)
@@ -68,9 +68,9 @@ batch script arguments:
 ## 4. Video Download
 ####	python script: BandhubVideoDownload.py
 ####	batch script: DownloadVideoBatch.sh
-batch script arguments:
-    hdfFile : str
-        Name of the old hdf5 file whose information is to be appended
+####    batch script arguments:
+    * hdfFile : str
+        * Name of the old hdf5 file whose information is to be appended
     outputPath : str
         Path to the directory where the video files will be stored 
         (ie: /scratch/netID/video)
