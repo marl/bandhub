@@ -262,7 +262,8 @@ if __name__ == '__main__':
     rowLimit : int
         Total number of rows to be processed/downloaded (soft cap)
     publishedTracks : bool
-        Name of the new hdf5 file to be written
+        True if you want only the tracks that are considered published, false it you want
+        to download all files in the HDF file. 
         
     Returns
     -------

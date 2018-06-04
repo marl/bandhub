@@ -100,7 +100,7 @@ def download(hdfName, outputPath, startIndex, rowLimit, publishedOnly):
     dataColumn = data["trackVideoURL"] #grab only the column of interest
 
     make_dir(outputPath)
-    rowCounter = 0
+    rowCounter = startIndex
     for url in dataColumn:
         if pd.notnull(url):
             if url[-4:] == '.mp4':
@@ -134,8 +134,9 @@ if __name__ == '__main__':
     rowLimit : int
         Total number of rows to be processed/downloaded (soft cap)
     publishedTracks : bool
-        Name of the new hdf5 file to be written
-        
+        True if you want only the tracks that are considered published, false it you want
+        to download all files in the HDF file.      
+           
     Returns
     -------
     None
