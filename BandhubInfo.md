@@ -7,7 +7,7 @@
 
 ## 1. HDF File creation
 ####	python script: BandhubFileCreation.py
-####	batch script: BandhubBatch.sh
+####	batch script: FileCreation.sh
 #### 	batch script arguments: 
     portNum : int
         Name of the hdf5 file
@@ -26,7 +26,7 @@ These scripts will incrementally iterate through the Bandhub monogodb database (
 
 ## 2. HDF Effects Append
 ####	python script: BandhubAppend.py
-####	batch script: AppendBatch.sh
+####	batch script: Append.sh
 ####    batch script arguments:     
     hdfName : str
         Name of the old hdf5 file whose information is to be appended
@@ -44,7 +44,7 @@ These scripts take the original HDF file created using the scripts in section 1 
 
 ## 3. Audio Download
 ####	python script: BandhubAudioDownload.py
-####	batch script: DownloadAudioBatch.sh
+####	batch script: DownloadAudio.sh
 ####    batch script arguments: 
     hdfFile : str
         Name of the old hdf5 file whose information is to be appended
@@ -70,7 +70,7 @@ These scripts download unprocessed (audioURL) and processed (processedAudioURL).
 
 ## 4. Video Download
 ####	python script: BandhubVideoDownload.py
-####	batch script: DownloadVideoBatch.sh
+####	batch script: DownloadVideo.sh
 ####    batch script arguments:
     hdfFile : str
         Name of the old hdf5 file whose information is to be appended
@@ -185,6 +185,13 @@ This script simply uses the rsync command to copy over files to the /scratch/wor
 	* Track EQ Values vary in length, therefore they are encoded as json strings
 
 ## Dataset Creation Procedure
+#### Steps
+1. Use FileCreation.sh to create generate the initial HDF file. This was originally done in groupings of 30,000 songs. That is, multiple copies of FileCreation.sh and the associated python script were used to generate the HDF file. The startIndex was set to increments of 30,000 (0, 30,000, 60,000, etc.) and the documentLimit was set to 30,010 (for some overlap to guarantee all songs were looked through). After all 420,000 “public” access songs were looked through, the individual dataset partitions were combined using CombineDatasetPartitions.ipynb. In this .ipynb, duplicate trackIds are removed and any overlap by virtue of the creation procedure was accounted for. 
+
+2. Use the Append.sh to add the additional field names that were not included in the initial HDF creation. This script is much faster than the previous and can be done in chunks or all together. To generate the current version of the HDF file, 60,000 row chunks were used, followed by combining the HDF partitions using CombineDatasetPartitions.ipynb. Once again some overlap was included (by making the documentLimit slightly above the length of each chunk, 60,000 in this case) and removed using CombineDatasetPartitions.ipynb. This current HDF version still uses Pandas, NOT h5py.
+
+3. The next steps were to download the data. Use DownloadAudio.sh to download the processed and unprocessed audio data. The downloading was once again down in chunks using multiple copies of the shell and python script. The files were initially downloaded to my scratch folder and the shell script TransferFiles.sh was used to move all the data to /scratch/work/marl/bandhub, where the data currently exists. The audio download stores the .ogg files in a directory that must be removed by the user after downloading. The main output paths contain only .flac files. The name of each file was generated from the unique ends of the url used to download the file (see the .py script). There are a few caveats with respect to the current audio download. First, the rowLimit is a soft cap. That is, the script does not break until all tracks associated with the last song have been looked through to ensure that all tracks within a song are of uniform length. However, this does not hold for the startIndex. That is, if one sets the startIndex at 20,000, if there are associated tracks before that value, all tracks within a song might not be of uniform length. This was handled by adding sufficient overlap between chunks of audio downloads and taking the file that had the most recent timestamp. Thus it is important for perform the audio download in sequential order (or when you validate that all audio is accurate and handle the 48,000 sr material and the few songs that are .m4a, redownload all tracks within a song if that set of tracks does not have uniform length.
+
+4. Use DownloadVideo.sh to download the video material. The video data downloads much faster than the audio data because it only needs to be read in once and is not converted. This download was done without multiple copies of the .py and .sh scripts and is straight-forward. The only video data missing are YouTube videos, which might have copyright issues anyway.   
 
 ## Bandhub Basic Statistics
-
