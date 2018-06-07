@@ -6,9 +6,8 @@ bandhub mongodb database.
 
 Running this code directly writes out a new HDF file
 
-Please use the associated script BandhubBatch.sh to run this script
+Please use the associated script FileCreation.sh to run this script
 '''
-# ========================================================================================
 import argparse
 import pymongo
 import pandas as pd
@@ -18,7 +17,6 @@ import os
 import json
 import time
 # IMPORTS
-# ========================================================================================
 
 
 def initialize(mongoPortNum, database):

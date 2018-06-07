@@ -8,9 +8,8 @@ HDF file.
 
 Running this code directly perform the appending and writes out a new HDF file
 
-Please use the associated script AppendBatch.sh to run this script
+Please use the associated script Append.sh to run this script
 '''
-# ========================================================================================
 import argparse
 import pymongo
 import pandas as pd
@@ -21,7 +20,6 @@ import json
 import time
 import sys
 # IMPORTS
-# ========================================================================================
 
 
 def initialize(mongoPortNum):

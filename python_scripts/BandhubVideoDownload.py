@@ -1,14 +1,12 @@
-''''
+'''
 Written by Gregory Reardon - Music and Audio Research Lab (MARL)
 
 This script downloads the track videos of the bandhub dataset
 
 Running this code directly performs the downloading
 
-Please use the associated script DownloadVideoBatch.sh to run this script
-''''
-
-# ========================================================================================
+Please use the associated script DownloadVideo.sh to run this script
+'''
 import argparse
 import pandas as pd
 import requests
@@ -16,7 +14,6 @@ import errno
 import os
 import sys
 # IMPORTS
-# ========================================================================================
 
 
 def make_dir(directory):
@@ -141,7 +138,6 @@ if __name__ == '__main__':
     -------
     None
     '''
-# ========================================================================================
     parser = argparse.ArgumentParser()
     parser.add_argument("hdfFile", help='Full path to HDF file', type=str)
     parser.add_argument("outputPath", help = 'Full path of folder to download video files to', type=str)
@@ -159,4 +155,3 @@ if __name__ == '__main__':
 
     print('Arugments parsed, ready to begin downloading')
     download(HDFName, outputPath, startIndex, fileLimit, publishedOnly)
-# ========================================================================================

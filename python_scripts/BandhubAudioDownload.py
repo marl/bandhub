@@ -1,4 +1,4 @@
-''''
+'''
 Written by Gregory Reardon - Music and Audio Research Lab (MARL)
 
 This script downloads unprocessed and processed audio files of the bandhub dataset
@@ -7,9 +7,8 @@ tracks within one collaboration are of uniform length
 
 Running this code directly performs the downloading
 
-Please use the associated script DownloadAudioBatch.sh to run this script
-''''
-# ========================================================================================
+Please use the associated script DownloadAudio.sh to run this script
+'''
 import argparse
 import pandas as pd
 import numpy as np
@@ -20,7 +19,6 @@ import soundfile as sf
 import errno
 import sys
 # IMPORTS
-# ========================================================================================
 
 
 def make_dir(directory):
