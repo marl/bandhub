@@ -195,3 +195,4 @@ This script simply uses the rsync command to copy over files to the /scratch/wor
 4. Use DownloadVideo.sh to download the video material. The video data downloads much faster than the audio data because it only needs to be read in once and is not converted. This download was done without multiple copies of the .py and .sh scripts and is straight-forward. The only video data missing are YouTube videos, which might have copyright issues anyway.   
 
 ## Bandhub Basic Statistics
+#### Please see BandhubStats.ipynb
